@@ -1,9 +1,7 @@
-# Komodo: multi-host Docker management. Backend is Postgres+FerretDB (Mongo
-# wire-protocol adapter over Postgres, https://www.ferretdb.com) instead of
-# plain MongoDB: reuses the existing postgres-exporter and backup-postgres.sh
-# and avoids adding a new database engine just for this service.
-# Runs only on zangetsu (central Core). Periphery agents run on each managed
-# host - see periphery.yaml (host-agnostic, also included on urahara).
+# Komodo Core, zangetsu only. Backend is Postgres+FerretDB (Mongo wire
+# protocol over Postgres) rather than MongoDB, so the existing
+# postgres-exporter and backup-postgres.sh cover it. Agents: periphery.yaml.
+# Deploy is manual, never through Komodo itself - see docs/komodo.md.
 services:
   komodo-postgres:
     # 🚨 Explicit version pin: updates can break the DocumentDB extension.
@@ -68,26 +66,14 @@ services:
     pids_limit: 128
     depends_on:
       - komodo-ferretdb
-    # komodo-core runs in a separate Compose project (hosts/zangetsu/komodo-core.yaml,
-    # see comment there). Cross-project depends_on doesn't work in Compose, so
-    # dockflare was removed from here (it was only start order; dockflare is
-    # already up long before core actually needs it).
-    # Published on the LAN so the remote Periphery on urahara can reach Core
-    # (same exception already documented for DockFlare, port 5000 for the
-    # remote agent).
+    # No depends_on: dockflare - cross-project depends_on does not work, and
+    # this is a separate Compose project (docs/komodo.md).
+    # Published on the LAN so the Periphery on urahara can reach Core.
     ports:
       - "192.168.15.214:9120:9120"
-    # Real quirk (Komodo v2.3.2): DeployStackIfChanged hangs forever (no
-    # error, no log, no persisted update, never reaches Periphery) even with
-    # clone/credentials working. Hang confirmed specifically in
-    # RefreshStackCache/DeployStackIfChanged, apparently tied to a native
-    # git-clone Stack with an `include:`-heavy compose.yaml (many files to
-    # resolve in the diff); not seen on a stack with a single compose.yaml
-    # and no include:. Plain DeployStack (forces a full deploy) works end to end.
-    # So homelab-urahara uses webhook_force_deploy: true (Stack config in
-    # Komodo, not in this yaml). Re-evaluate once Watchtower updates Core past
-    # 2.3.2 (see watchtower label below); don't revert before confirming in a
-    # test that the bug is gone.
+    # Both Stacks use webhook_force_deploy: true because DeployStackIfChanged
+    # hangs on include:-heavy stacks. Do not revert without a reproducible
+    # test - full story in docs/komodo.md.
     volumes:
       - /opt/apps/komodo/keys:/config/keys
       - /opt/apps/komodo/backups:/backups
@@ -105,16 +91,12 @@ services:
       - KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET}
       - KOMODO_WEBHOOK_SECRET=${KOMODO_WEBHOOK_SECRET}
       - KOMODO_PASSKEY=${KOMODO_PASSKEY}
-      # Default is 1-hr, too slow for the dashboard to reflect new/removed
-      # containers. CPU/mem stats are already fast by default
-      # (monitoring_interval, not changed here).
+      # Default is 1h, too slow for the dashboard to notice a new or removed
+      # container. CPU/mem stats are already fast by default.
       - KOMODO_RESOURCE_POLL_INTERVAL=5-min
     labels:
-      # Floating tag (:2): standard auto-update opt-in (see the Docker image
-      # policy in CONVENTIONS.md). Careful with upgrades: Komodo v2.3.2 has a known
-      # DeployStackIfChanged bug (see comment above volumes:). After each
-      # automatic update, check release notes/CHANGELOG to see whether that
-      # workaround is still needed.
+      # After each auto-update, check the changelog: the force-deploy
+      # workaround above may no longer be needed.
       com.centurylinklabs.watchtower.enable: "true"
       traefik.enable: "true"
       traefik.http.routers.komodo.rule: "Host(`komodo.lan.thalespm.me`)"
@@ -122,16 +104,13 @@ services:
       traefik.http.routers.komodo.tls.certresolver: "cloudflare"
       traefik.http.routers.komodo.middlewares: "crowdsec@file,security-headers@file"
       traefik.http.services.komodo.loadbalancer.server.port: "9120"
-      # Public so it can receive GitHub webhooks (Komodo Stack in native
-      # git-clone mode). GitHub can't reach
-      # *.lan.thalespm.me (split-horizon, resolves only on the internal LAN).
+      # Public because GitHub cannot reach *.lan.thalespm.me (split-horizon).
       dockflare.enable: "true"
       dockflare.hostname: "komodo.thalespm.me"
       dockflare.service: "http://komodo-core:9120"
       dockflare.access.group: "homelab-admin"
-      # Webhook listener bypasses Access (GitHub can't complete the MFA flow).
-      # Authenticity is validated by Komodo itself via HMAC signature
-      # (Webhook Secret), not by Cloudflare Access.
+      # The listener bypasses Access (GitHub cannot do MFA); Komodo validates
+      # the HMAC signature itself.
       dockflare.0.hostname: "komodo.thalespm.me"
       dockflare.0.path: "/listener"
       dockflare.0.service: "http://komodo-core:9120"

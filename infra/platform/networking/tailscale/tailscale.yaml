@@ -16,43 +16,26 @@ services:
       - TZ=${TZ}
       - TS_AUTHKEY=${TAILSCALE_AUTH_KEY}
       - TS_STATE_DIR=/var/lib/tailscale
-      # Host-agnostic on purpose: fragment shared by zangetsu and urahara
-      # (redundant subnet router); each host resolves to its own name via
-      # NODE_HOSTNAME (already in each host's .env).
+      # Shared by both hosts (redundant subnet router); each resolves its own
+      # name from NODE_HOSTNAME in its .env.
       - TS_HOSTNAME=${NODE_HOSTNAME}
-      # --accept-dns=false is required: with network_mode host, tailscaled
-      # sees and can rewrite the host's REAL /etc/resolv.conf (no network
-      # namespace isolation) if it accepts the tailnet's MagicDNS. Without
-      # this flag it would break DNS resolution for all of urahara.
+      # --accept-dns=false is mandatory: with network_mode host there is no
+      # namespace isolation, so accepting MagicDNS rewrites the host's real
+      # /etc/resolv.conf and kills local DNS.
       - TS_EXTRA_ARGS=--advertise-routes=192.168.15.0/24 --accept-dns=false
       - TS_USERSPACE=false
-      # Host-specific on purpose (empty default = normal tailscaled
-      # auto-detect). Only zangetsu (RPi) needs it: its kernel has no legacy
-      # ip_tables support (neither builtin nor module, only native nftables).
-      # Without this var, tailscaled tries the iptables backend by default,
-      # fails to create its own chains (including SNAT) and the subnet router
-      # silently breaks routing (accepts inbound, replies never return).
-      # urahara (x86) never had this error - don't force nftables there; with
-      # no such var in its .env, the empty default applies.
+      # zangetsu only (RPi kernel has no legacy ip_tables). Empty elsewhere,
+      # which means auto-detect. See the Tailscale entry in CONVENTIONS.md.
       - TS_DEBUG_FIREWALL_MODE=${TAILSCALE_FIREWALL_MODE:-}
     volumes:
       - /opt/apps/tailscale/state:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
-      # Without this, tailscaled fails to configure ALL of its netfilter at
-      # boot (modprobe: can't change directory to '/lib/modules'), including
-      # SNAT for routed traffic (NoSNAT=false in prefs, but no effect unless
-      # the rule is actually applied). Real symptom: the subnet router accepts
-      # the inbound packet (FORWARD/DOCKER-USER ok), but the reply never
-      # returns - the LAN target gets the packet with the original 100.x IP
-      # (no NAT) and has no route back. Confirmed on zangetsu (RPi, kernel
-      # 6.18.34+rpt-rpi-2712); urahara never hit this, but the mount is
-      # harmless there too (:ro).
+      # Needed on the RPi or tailscaled configures no netfilter at all,
+      # SNAT included (CONVENTIONS.md). Harmless on x86, so it stays shared.
       - /lib/modules:/lib/modules:ro
     healthcheck:
-      # BackendState (not Online): a generic Online could match a peer
-      # instead of this node. The real JSON has a space after ":" (format
-      # "Online": true); a grep that didn't allow for it never matched (real
-      # bug, fixed after testing manually inside the container).
+      # BackendState, not Online: a bare "Online" also matches a peer. Mind
+      # the space after the colon in the JSON - a grep without it never hits.
       test: ["CMD-SHELL", "tailscale status --json | grep -q '\"BackendState\": \"Running\"'"]
       interval: 30s
       timeout: 10s

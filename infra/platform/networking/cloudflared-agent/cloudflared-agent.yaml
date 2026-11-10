@@ -1,16 +1,9 @@
 services:
   cloudflared-agent:
-    # Pinned tag, not "latest": critical component (the whole public network
-    # depends on it). Real incident: WUD (the previous auto-updater)
-    # auto-updated it via digest watch; stop+remove of the old container
-    # worked but creating the new one failed (HTTP 431 from
-    # docker-socket-proxy, a real WUD bug: it serializes the container config
-    # as a query string instead of a JSON body,
-    # https://github.com/getwud/wud/issues/621), taking down the whole tunnel
-    # until manual intervention. That incident (plus an identical one on
-    # homepage) is why we moved back to Watchtower - see the Docker image
-    # policy in CONVENTIONS.md. No Watchtower label below (opt-in) = never
-    # auto-updated, on purpose.
+    # Pinned and deliberately left without a Watchtower label: the whole
+    # public network depends on this one container, and an auto-update once
+    # took the tunnel down until someone intervened (CONVENTIONS.md, image
+    # policy).
     image: cloudflare/cloudflared:2026.8.2
     container_name: cloudflared-agent-lemonpi-5-tunel
     restart: unless-stopped
@@ -23,11 +16,9 @@ services:
       - --no-autoupdate
     command:
       - tunnel
-      # cloudflared metrics/health, only on the internal network
-      # (cloudflare-net), never published on the host. /ready returns 200 only
-      # when the tunnel has an actually registered connection. Used by the
-      # dedicated Uptime Kuma monitor (see scripts/setup/setup-uptime-kuma.py),
-      # a more direct signal than monitoring some public app behind the tunnel.
+      # Internal only, never published. /ready returns 200 only with a
+      # registered connection, which is what the Uptime Kuma monitor checks -
+      # a more direct signal than probing an app behind the tunnel.
       - --metrics
       - 0.0.0.0:2000
       - run
@@ -37,9 +28,8 @@ services:
       - ${HOMELAB_ENV}
     environment:
       - TZ=${TZ}
-      # UDP/7844 (QUIC) has real connectivity failures (ISP/routing) to some
-      # Cloudflare edges. Forces HTTP/2 over TCP as transport, bypassing QUIC
-      # entirely.
+      # QUIC (UDP/7844) fails to reach some Cloudflare edges from this ISP;
+      # this forces HTTP/2 over TCP instead.
       - TUNNEL_TRANSPORT_PROTOCOL=http2
     extra_hosts:
       - "host.docker.internal:host-gateway"

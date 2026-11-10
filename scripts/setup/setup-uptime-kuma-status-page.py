@@ -23,11 +23,9 @@ UPTIME_KUMA_PASS = os.getenv("UK_PASS", "")
 
 STATUS_PAGE_SLUG = "homelab"
 
-# =============================================================================
-# STATUS_PAGE_GROUPS
+# --- STATUS_PAGE_GROUPS ---
 # Monitor names must match MONITORS in setup-uptime-kuma.py exactly.
 # Group names are what the public page shows.
-# =============================================================================
 STATUS_PAGE_GROUPS = [
     ("Platform", [
         "Komodo",

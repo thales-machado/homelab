@@ -4,6 +4,8 @@ Traefik handles private routing (`*.lan.thalespm.me`) through Docker labels, the
 
 **Public certificate from Let's Encrypt (DNS-01 through Cloudflare)**: the `cloudflare` resolver (Lego, `CLOUDFLARE_DNS_API_TOKEN=${CF_API_TOKEN}`, reusing DockFlare's token with `Zone:DNS:Edit` on the zone). The DNS-01 challenge creates and deletes a temporary `_acme-challenge` TXT record through the Cloudflare API, so no port 80/443 is exposed to the internet and there is no public A record: split-horizon keeps access on the LAN and VPN only (Pi-hole is the only resolver that answers `*.lan.thalespm.me`, and Traefik itself is never published through the tunnel). The certificate is a **single wildcard** (`*.lan.thalespm.me`, declared with `tls.domains` on the `traefik-dashboard` router); every other router only references `tls.certresolver: cloudflare` and reuses that certificate from the store by SNI match, with no repeated `tls.domains` and no ACME request per service.
 
+The initial wildcard issuance needs a longer propagation timeout than lego's default 120s. The apex and the wildcard share one TXT record name (`_acme-challenge.lan.thalespm.me`) and are solved sequentially, and between the cleanup of the first challenge and the creation of the second the public resolvers keep serving the cached value until the TTL expires. With the default the issuance fails with "did not return the expected TXT record".
+
 This replaced an internal CA, so certificates are now trusted natively by any OS or browser with no root CA to install on each new device.
 
 **`acme.json` and `acme-cloudflare.json` must exist with `chmod 600` before the first start**, or Traefik refuses to come up. `scripts/setup/setup-traefik-config.sh` takes care of it.

@@ -24,3 +24,19 @@ Consequence: `komodo-core` can no longer have `depends_on: dockflare`, since `de
 **A `container_name` conflict leaves the whole host in `Created`.** `docker compose up -d` recreates everything first and only then starts it, so if creating a single container fails (for example `Conflict. The container name "/<name>" is already in use`, from a container created by hand with `docker run` and no Compose labels), Compose aborts and **every** already-recreated container sits in `Created`: Pi-hole, Traefik, the tunnel. `DeployStack` returns `success:false`. Fix: rename or remove the orphan container and run `docker compose up -d` again. A container left with a hash prefix (`<id>_grafana`) is the service's only instance, so just `docker rename` it back.
 
 **`git` "dubious ownership"**: a Stack in native git-clone mode (`clone_path=/opt/homelab`, writing straight into the repo's real path) needs `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_N` / `GIT_CONFIG_VALUE_N=safe.directory` in Periphery's `environment:` (the equivalent of `git config --global --add safe.directory`, without depending on a persisted `.gitconfig`). Without it, `git remote set-url` and clone fail with "detected dubious ownership", because `/opt/homelab` on the host belongs to `keydrop` while Periphery runs as root inside the container.
+
+## Periphery environment
+
+Three settings exist because of a production failure, all silent:
+
+**`PERIPHERY_PASSKEYS` must equal Core's `KOMODO_PASSKEY`.** Without it the Noise handshake never completes: the container starts normally, the Server never reaches "Ok" in the UI, and `core.pub` is never written to `/config/keys`. The public-key exchange itself is automatic (TOFU) but only runs after the passkey authenticates the connection.
+
+**`PERIPHERY_SERVER_ENABLED=true` is required alongside `PERIPHERY_CORE_ADDRESS`.** Setting `core_address` (outbound mode) disables the inbound server on port 8120 by default, but Core always connects *directly* to the Server address set in the UI to read status and stats. With inbound off, 8120 never listens and the Server stays "NotOk" (connection refused) even while the outbound channel works. Both modes must coexist.
+
+**`HOMELAB_ENV` has to be passed into Periphery explicitly.** A native git-clone Stack runs `docker compose` as a subprocess inside the Periphery container, where `${HOMELAB_ENV}` is empty (on the host it only exists through `/etc/environment`, i.e. in human SSH sessions). Every fragment's `env_file: - ${HOMELAB_ENV}` then fails with `env file not found: stat : no file directory`.
+
+`PERIPHERY_CORE_ADDRESS` and `PERIPHERY_CONNECT_AS` differ per host (container name on the same Docker network on zangetsu, LAN-published `IP:port` on urahara), so each host sets them in its own `.env`, like `PIHOLE_STATIC_IP`.
+
+`GIT_CONFIG_*` does not merge across fragments: a host override that redeclares `environment:` must repeat the whole `safe.directory` trio.
+
+Periphery mounts the Docker socket directly, with no `docker-socket-proxy`, because it needs read-write control (start, stop, deploy).

@@ -42,17 +42,10 @@ services:
     networks:
       - cloudflare-net
     restart: "no"
-    # profiles: init - only runs with `docker compose --profile init up -d
-    # dockflare-init`, never with a plain `docker compose up -d`. Must be run
-    # manually before the first start on a new host or reset volume (chowns
-    # /opt/apps/dockflare to UID 65532, which dockflare runs as). Without it
-    # dockflare fails with a permission error on first start.
-    # Accepted trade-off: without profiles, depends_on:
-    # service_completed_successfully forced dockflare to wait for init on
-    # every stack start (and init stayed in Exited(0) forever, cluttering
-    # Komodo). Komodo has no native label to hide a single container from the
-    # list (`komodo.skip` only affects the bulk "Stop All Containers" action,
-    # not the UI).
+    # Does NOT run on a plain `docker compose up -d`. Chowns /opt/apps/dockflare
+    # to UID 65532 and must be run by hand before the first start on a new host
+    # or after resetting the volume - command and trade-off in
+    # docs/traefik-dockflare.md.
     profiles:
       - init
     labels:
@@ -73,10 +66,8 @@ services:
       start_period: 30s
     volumes:
       - /opt/apps/dockflare:/app/data
-    # Port published only on zangetsu's LAN: DockFlare Agents on other hosts
-    # (e.g. urahara) talk to the master directly by IP, without depending on
-    # the reverse proxy or its TLS cert (dockflare.lan.thalespm.me is served
-    # by Traefik/Let's Encrypt).
+    # Documented exception to "publish no port": the remote Agent reaches the
+    # master by IP, without depending on the proxy or its certificate.
     ports:
       - "192.168.15.214:5000:5000"
     env_file:
@@ -96,18 +87,11 @@ services:
       - AGENT_STATUS_UPDATE_INTERVAL_SECONDS=10
       - SCAN_ALL_NETWORKS=false
       - CLOUDFLARED_NETWORK_NAME=cloudflare-net
-      # External mode: DockFlare does not manage/recreate the cloudflared
-      # container; it only consumes other services' labels to build
-      # ingress/DNS. Without this, DockFlare runs in "managed" mode: it treats
-      # the agent as its own, ignores our pinned tag (assumes 'latest' as
-      # desired even with CLOUDFLARED_IMAGE set - tested, not honored) and
-      # keeps recreating cloudflared-agent-lemonpi-5-tunel outside compose
-      # whenever it detects a "mismatch", colliding with our own docker compose
-      # up (container without compose labels, name collision on every
-      # recreate - the real root cause of the recurring "Conflict: container
-      # name already in use"). The tunnel UUID comes from CF_TUNNEL_TOKEN
-      # itself (payload "t"; the token is base64 of
-      # {"a":account_id,"t":tunnel_id,"s":secret}).
+      # External mode: DockFlare only reads labels for ingress and DNS and
+      # never touches the cloudflared container. In managed mode it recreates
+      # that container outside compose, which is the root cause of the
+      # recurring "container name already in use" - docs/traefik-dockflare.md.
+      # EXTERNAL_TUNNEL_ID is the UUID inside CF_TUNNEL_TOKEN itself.
       - USE_EXTERNAL_CLOUDFLARED=true
       - EXTERNAL_TUNNEL_ID=${CF_TUNNEL_ID}
       - MAX_CONCURRENT_DNS_OPS=3
@@ -125,8 +109,7 @@ services:
       - dockflare-internal
     labels:
       dockflare.enable: "false"
-      # "stable" tag (not "latest"): no digits, safe for normal digest
-      # watching.
+      # "stable", not "latest": no digits, safe for digest watching.
       com.centurylinklabs.watchtower.enable: "true"
       traefik.enable: "true"
       traefik.http.routers.dockflare.rule: "Host(`dockflare.lan.thalespm.me`)"

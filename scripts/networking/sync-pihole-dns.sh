@@ -1,17 +1,12 @@
 #!/bin/bash
-# =============================================================================
-# sync-pihole-dns.sh — Syncs DNS records to Pi-hole v6 via its API
-# =============================================================================
+# --- sync-pihole-dns.sh — Syncs DNS records to Pi-hole v6 via its API ---
 # Usage: bash scripts/networking/sync-pihole-dns.sh
 # Requires: curl, jq, python3
 # Endpoint: PATCH /api/config with a hosts array in "IP hostname" format
-# =============================================================================
 
 set -uo pipefail
 
-# =============================================================================
-# Settings
-# =============================================================================
+# --- Settings ---
 HOMELAB_ENV="/opt/homelab/hosts/zangetsu/.env"
 PIHOLE_URL="http://172.22.0.240"
 DNS_FILE="/opt/homelab/infra/platform/networking/pi-hole/config/pihole-dns.yaml"
@@ -28,9 +23,7 @@ if [ -z "$PIHOLE_PASSWORD" ]; then
   exit 1
 fi
 
-# =============================================================================
-# Check dependencies
-# =============================================================================
+# --- Check dependencies ---
 for cmd in curl jq python3; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "❌ Missing dependency: $cmd"
@@ -43,9 +36,7 @@ if [ ! -f "$DNS_FILE" ]; then
   exit 1
 fi
 
-# =============================================================================
-# Authenticate
-# =============================================================================
+# --- Authenticate ---
 echo "🔐 Authenticating to Pi-hole..."
 AUTH_RESPONSE=$(curl -s -X POST "${PIHOLE_URL}/api/auth" \
   -H "Content-Type: application/json" \
@@ -65,9 +56,7 @@ fi
 
 echo "✅ Authenticated successfully"
 
-# =============================================================================
-# Read records from the yaml (single source of truth)
-# =============================================================================
+# --- Read records from the yaml (single source of truth) ---
 echo "🔄 Processing records from the yaml..."
 MERGED=$(python3 - << PYEOF
 import yaml, json, sys
@@ -94,9 +83,7 @@ fi
 TOTAL=$(echo "$MERGED" | jq 'length')
 echo "📦 Total records to apply: ${TOTAL}"
 
-# =============================================================================
-# Apply via PATCH
-# =============================================================================
+# --- Apply via PATCH ---
 echo "🚀 Applying records to Pi-hole..."
 PATCH_RESPONSE=$(curl -s -X PATCH "${PIHOLE_URL}/api/config" \
   -H "Content-Type: application/json" \
@@ -115,19 +102,15 @@ if [ "$APPLIED" = "0" ]; then
   exit 1
 fi
 
-# =============================================================================
-# Close the session
-# =============================================================================
+# --- Close the session ---
 curl -s -X DELETE "${PIHOLE_URL}/api/auth" \
   -H "X-FTL-SID: ${TOKEN}" > /dev/null || true
 
 echo ""
 echo "✅ Sync complete — ${APPLIED} active records in Pi-hole"
 
-# =============================================================================
-# Propagate to the replica now: nebula-sync has no trigger and only syncs on
+# --- Propagate to the replica now: nebula-sync has no trigger and only syncs on ---
 # startup (otherwise every 6h), hence the restart.
-# =============================================================================
 echo "🔁 Propagating to the replica via Nebula Sync..."
 if docker restart nebula-sync > /dev/null 2>&1; then
   echo "✅ Nebula Sync triggered"

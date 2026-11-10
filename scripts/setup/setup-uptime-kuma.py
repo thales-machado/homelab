@@ -23,9 +23,7 @@ from uptime_kuma_api import UptimeKumaApi, MonitorType, NotificationType, Docker
 # monitor list is read from SQLite (read-only). Mutations still use the API.
 KUMA_DB_PATH = os.getenv("UK_DB_PATH", "/app/data/kuma.db")
 
-# =============================================================================
-# CONFIG (environment variables, with fallbacks)
-# =============================================================================
+# --- CONFIG (environment variables, with fallbacks) ---
 UPTIME_KUMA_URL  = os.getenv("UK_URL",  "http://192.168.15.214:3001")
 UPTIME_KUMA_USER = os.getenv("UK_USER", "keydrop")
 UPTIME_KUMA_PASS = os.getenv("UK_PASS", "")
@@ -40,11 +38,9 @@ DEFAULT_RETRY_INTERVAL = 20
 NOTIFICATION_NAME = "WhatsApp - Homelab Notify"
 NOTIFICATION_WEBHOOK_URL = "http://192.168.15.215:8097/webhook/homelab-notify"
 
-# =============================================================================
-# MONITORS
+# --- MONITORS ---
 # (name, url, group, interval[, statuscodes, ignore_tls, tcp_port, dns_server])
 # Container names work for zangetsu services; urahara services use IP:port.
-# =============================================================================
 MONITORS = [
     # --- Management ---
     ("Komodo",           "http://komodo-core:9120",       "Management",    60),
@@ -120,12 +116,10 @@ MONITORS = [
     ("thalespm.me",           "https://thalespm.me",              "External", 60),
 ]
 
-# =============================================================================
-# DOCKER CONTAINERS
+# --- DOCKER CONTAINERS ---
 # Docker Container monitors (running/healthy via each host's docker-socket-proxy),
 # only for containers with no other signal (no HTTP/TCP above, no `up` scrape).
 # Unhealthy counts as DOWN. Monitor name: "<container> (<host>)".
-# =============================================================================
 DOCKER_HOSTS = {
     # the proxy only lives on dockflare-internal (see uptime-kuma.yaml)
     "zangetsu": "http://docker-socket-proxy:2375",
@@ -173,9 +167,7 @@ DOCKER_MONITORS = {
 def docker_monitor_names():
     return [f"{c} ({h})" for h, containers in DOCKER_MONITORS.items() for c in containers]
 
-# =============================================================================
-# SCRIPT
-# =============================================================================
+# --- SCRIPT ---
 
 def list_monitors_db(db_path=KUMA_DB_PATH):
     """Read id/name/type/parent of every monitor from SQLite (read-only)."""
