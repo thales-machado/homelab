@@ -1,0 +1,109 @@
+# =============================================================================
+# Pi-hole — Local DNS Records
+# =============================================================================
+# Source of truth for the Pi-hole local DNS records.
+# To apply: run scripts/networking/sync-pihole-dns.sh, or just commit (the
+# GitHub Actions workflow runs it).
+# =============================================================================
+
+records:
+  # --- Platform - Networking ---
+  - domain: dockflare.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: pihole.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: traefik.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Platform - Security ---
+  - domain: vaultwarden.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Platform - Management ---
+  - domain: komodo.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Platform - Backup ---
+  - domain: rclone.lan.thalespm.me
+    ip: 192.168.15.214
+  # Plain SMB, no Traefik: points straight at urahara, no certificate.
+  - domain: samba.lan.thalespm.me
+    ip: 192.168.15.215
+  # Moonlight pairing page through Traefik (cross-host.yml); the stream
+  # itself goes straight to the urahara IP.
+  - domain: wolf.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Network Infrastructure ---
+  - domain: headroom.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: nas.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: unifi.lan.thalespm.me
+    ip: 192.168.15.250
+
+  # --- Hosts ---
+  - domain: zangetsu.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: urahara.lan.thalespm.me
+    ip: 192.168.15.215
+
+  # --- Observability ---
+  - domain: grafana.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: victoriametrics.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: dozzle.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: uptime-kuma.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: loki.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: scrutiny.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: healthchecks.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Automation ---
+  - domain: dagu.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: n8n.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Integration ---
+  - domain: evo-api.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Finance ---
+  - domain: firefly.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: fidi.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Content ---
+  - domain: immich.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: paperless.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: stirling.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: tandoor.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Utilities ---
+  - domain: homepage.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: it-tools.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: qbit.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: trilium.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: speedtest.lan.thalespm.me
+    ip: 192.168.15.214
+  - domain: vikunja.lan.thalespm.me
+    ip: 192.168.15.214
+
+  # --- Smart Home ---
+  - domain: homeassistant.lan.thalespm.me
+    ip: 192.168.15.214

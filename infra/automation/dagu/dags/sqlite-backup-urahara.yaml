@@ -1,0 +1,31 @@
+name: sqlite-backup-urahara
+description: Consistent daily backup of the SQLite databases of urahara apps (e.g. Home Assistant) - the DAG runs on zangetsu and executes remotely over SSH, same pattern as restic-backup-urahara
+
+schedule: "CRON_TZ=America/Sao_Paulo 20 2 * * *"
+
+steps:
+  - name: backup
+    retry_policy:
+      limit: 3
+      interval_sec: 900
+    action: ssh.run
+    with:
+      user: keydrop
+      host: 192.168.15.215
+      port: 22
+      key: /opt/homelab-ssh/id_ed25519
+      known_host_file: /opt/homelab-ssh/known_hosts
+      strict_host_key: true
+      # Explicit shell: same quirk as restic-backup-urahara.yaml, Dagu
+      # undoes the \$ escaping before sending the command over SSH.
+      shell: /bin/sh
+      command: >-
+        docker run --rm
+        -v /opt/homelab/scripts:/opt/homelab/scripts:ro
+        -v /opt/apps/home-assistant/config:/opt/apps/home-assistant/config
+        -v /opt/apps/trilium:/opt/apps/trilium
+        -v /opt/apps/crowdsec/data:/opt/apps/crowdsec/data
+        -v /opt/apps/vikunja/db:/opt/apps/vikunja/db
+        --network cloudflare-net
+        alpine:3
+        sh -c "apk add --no-cache --quiet sqlite && sh /opt/homelab/scripts/backup/backup-sqlite-urahara.sh && wget -q -O /dev/null http://192.168.15.214:8000/ping/8d5c5ca4-9cbc-44c6-aa2a-dc1e034c61b1 || { wget -q -O /dev/null http://192.168.15.214:8000/ping/8d5c5ca4-9cbc-44c6-aa2a-dc1e034c61b1/fail; exit 1; }"

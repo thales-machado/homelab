@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enabledPlugins": {
+    "security-review@easier-life-skills": true,
+    "security-guidance@claude-plugins-official": true,
+    "crowdsec@claude-plugins-official": true,
+    "n8n-mcp-skills@n8n-mcp-skills": true,
+    "grafana-mcp@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "easier-life-skills": {
+      "source": {
+        "source": "github",
+        "repo": "dan323/easier-life-skills"
+      }
+    },
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    },
+    "n8n-mcp-skills": {
+      "source": {
+        "source": "github",
+        "repo": "czlonkowski/n8n-skills"
+      }
+    }
+  },
+  "pluginConfigs": {
+    "grafana-mcp@claude-plugins-official": {
+      "options": {
+        "grafana_url": "https://grafana.lan.thalespm.me/"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+#!/bin/sh
+# No-op: with --rc-files rclone tries to open a browser on start and, when that
+# fails, logs the URL with the rc user:password (which ends up in Loki). 1.76 has
+# no flag to turn it off.
+exit 0

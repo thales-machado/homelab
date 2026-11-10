@@ -1,0 +1,32 @@
+# Install once per clone: pip install pre-commit && pre-commit install
+# Run over everything: pre-commit run --all-files
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # 1.38+ reads files in binary mode; earlier versions use the locale
+  # encoding and crash on Windows (cp1252) on any file with an emoji.
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint.yml, -f, parsable]
+
+  # shellcheck-py, not koalaman/shellcheck-precommit: that one is a Docker
+  # hook and fails on any machine without a running Docker daemon.
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [-S, warning]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-json
+      - id: check-added-large-files
+        args: [--maxkb=2048]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace

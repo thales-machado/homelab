@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!-- Overrides the default ES-DE find rules for standalone PCSX2 and Dolphin
+     (per-game "alternative emulator").
+
+     PCSX2: some games render corrupted on the LRPS2 core. ES-DE looks for
+     "~/Applications/pcsx2-*.AppImage", but the Wolf image keeps the AppImage
+     in /Applications (the root, not under $HOME) and it runs through a
+     wrapper (~/bin/pcsx2-launch.sh, created by setup-wolf-esde.sh) that
+     passes the arguments (-batch %ROM%) to the appimage-extract-and-run
+     flag, which
+     Wolf's stock launcher.sh does not do.
+
+     Dolphin: some games hang or degrade on the libretro/dolphin core because
+     of a known "target refresh rate" oscillation bug in games that switch
+     video mode often (confirmed in the logs, also reported in
+     portare-ch/portareos#463, same core, another distribution). See
+     docs/wolf/wolf-setup.md. An unofficial AppImage
+     (pkgforge-dev/Dolphin-emu-AppImage, no FUSE needed) is downloaded by
+     hand to ~/dolphin-emu.AppImage, outside ~/bin, and runs through the
+     ~/dolphin-launch.sh wrapper. -->
+<ruleList>
+    <emulator name="PCSX2">
+        <rule type="staticpath">
+            <entry>~/bin/pcsx2-launch.sh</entry>
+        </rule>
+    </emulator>
+    <emulator name="DOLPHIN">
+        <rule type="staticpath">
+            <entry>~/dolphin-launch.sh</entry>
+        </rule>
+    </emulator>
+</ruleList>

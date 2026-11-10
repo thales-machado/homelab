@@ -1,0 +1,8 @@
+# Normalize to LF in the repository and in the working tree. The hosts run
+# these scripts and configs directly, and a CRLF committed from a Windows
+# client breaks them (`bash: $'\r': command not found`).
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary

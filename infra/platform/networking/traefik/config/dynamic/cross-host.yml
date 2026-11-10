@@ -1,0 +1,187 @@
+# Services outside zangetsu. The Docker provider only discovers containers
+# on its own host, so these are declared by IP:port (192.168.15.215 =
+# urahara, 192.168.15.220 = Headroom, 192.168.15.200 = NAS).
+http:
+  routers:
+    rclone:
+      rule: "Host(`rclone.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: rclone
+    # SPA fallback: rclone's --rc-files is a plain file server (404 on any
+    # non-file path) but the GUI routes by path (/login, /mounts...).
+    # replacePath only changes the path sent to rclone; the query string the
+    # GUI reads (/login?url=...) is kept.
+    rclone-spa:
+      rule: "Host(`rclone.lan.thalespm.me`) && PathRegexp(`^/(login|dashboard|explorer|mounts|remotes|serves|settings|transfers|local)(/|$)`)"
+      priority: 100
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers", "rclone-spa-index"]
+      service: rclone
+    headroom:
+      rule: "Host(`headroom.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "headroom-redirect", "security-headers"]
+      service: headroom
+    nas:
+      rule: "Host(`nas.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers-frameable"]
+      service: nas
+    evolution-api:
+      rule: "Host(`evo-api.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: evolution-api
+    immich:
+      rule: "Host(`immich.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: immich
+    paperless:
+      rule: "Host(`paperless.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: paperless
+    stirling:
+      rule: "Host(`stirling.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: stirling
+    tandoor:
+      rule: "Host(`tandoor.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: tandoor
+    qbittorrent:
+      rule: "Host(`qbit.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: qbittorrent
+    it-tools:
+      rule: "Host(`it-tools.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: it-tools
+    trilium:
+      rule: "Host(`trilium.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: trilium
+    vikunja:
+      rule: "Host(`vikunja.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: vikunja
+    homeassistant:
+      rule: "Host(`homeassistant.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: homeassistant
+    n8n:
+      rule: "Host(`n8n.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: n8n
+    wolf:
+      rule: "Host(`wolf.lan.thalespm.me`)"
+      entrypoints: ["websecure"]
+      tls: { certresolver: cloudflare }
+      middlewares: ["crowdsec", "security-headers"]
+      service: wolf
+
+  middlewares:
+    # "/" not "/index.html": Go's file server 301-redirects */index.html
+    rclone-spa-index:
+      replacePath:
+        path: "/"
+    headroom-redirect:
+      redirectRegex:
+        regex: "^https://headroom\\.lan\\.thalespm\\.me/$$"
+        replacement: "https://headroom.lan.thalespm.me/dashboard"
+        permanent: true
+
+  services:
+    rclone:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:5572"
+    headroom:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.220:8787"
+    nas:
+      loadBalancer:
+        serversTransport: nas-insecure
+        servers:
+          - url: "https://192.168.15.200:8443"
+    evolution-api:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8094"
+    immich:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:2283"
+    paperless:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8000"
+    stirling:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8080"
+    tandoor:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8083"
+    qbittorrent:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8095"
+    it-tools:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8092"
+    trilium:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8091"
+    vikunja:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:3456"
+    homeassistant:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8123"
+    n8n:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:8097"
+    # Only the Moonlight pairing page (/pin/#<secret>). The stream itself
+    # (47984/47989/48010 TCP, 47999/48100/48200 UDP) goes straight to the
+    # urahara IP, with no Traefik in between.
+    wolf:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.15.215:47989"
+
+  serversTransports:
+    nas-insecure:
+      insecureSkipVerify: true

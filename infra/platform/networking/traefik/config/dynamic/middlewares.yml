@@ -1,0 +1,56 @@
+# Shared Traefik middlewares. Source config: never commit the real value of
+# the __CROWDSEC_BOUNCER_KEY__ placeholder. Rendered by
+# scripts/setup/setup-traefik-config.sh into /opt/apps/traefik/dynamic/,
+# which the Traefik container mounts read-only.
+#
+# crowdsec must be referenced per router
+# (traefik.http.routers.<name>.middlewares: crowdsec@file); Traefik does not
+# apply a middleware to every router at the entrypoint level.
+http:
+  middlewares:
+    crowdsec:
+      plugin:
+        crowdsec-bouncer:
+          enabled: true
+          crowdsecMode: live
+          crowdsecLapiScheme: http
+          crowdsecLapiHost: "192.168.15.215:8082"
+          crowdsecLapiKey: "__CROWDSEC_BOUNCER_KEY__"
+
+    pihole-redirect:
+      redirectRegex:
+        regex: "^https://pihole\\.lan\\.thalespm\\.me/$$"
+        replacement: "https://pihole.lan.thalespm.me/admin/"
+        permanent: true
+
+    # Defense in depth even on the LAN: clickjacking, MIME sniffing, XSS.
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""
+
+    # For apps that frame themselves on purpose (the NAS web desktop opens
+    # each window as a same-origin iframe). frameDeny blocks framing from
+    # ANY origin, same-origin included, which broke those windows when
+    # reached through Traefik. SAMEORIGIN keeps third-party clickjacking
+    # protection without breaking them.
+    security-headers-frameable:
+      headers:
+        customFrameOptionsValue: "SAMEORIGIN"
+        contentTypeNosniff: true
+        browserXssFilter: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Powered-By: ""
+          Server: ""

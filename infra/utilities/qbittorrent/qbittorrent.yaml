@@ -1,0 +1,58 @@
+services:
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    cpus: 2.00
+    mem_limit: 4096m
+    pids_limit: 256
+    # WEBUI_PORT 8095: the default 8080 is already taken by stirling-pdf on
+    # urahara. TORRENTING_PORT 6881 is the default, forwarded on the router
+    # (outside this repo). Published on the LAN so zangetsu's Traefik can
+    # reach it through cross-host.yml, like every private urahara service.
+    ports:
+      - "192.168.15.215:8095:8095"
+      - "6881:6881"
+      - "6881:6881/udp"
+    volumes:
+      - /opt/apps/qbittorrent/config:/config
+      - /mnt/downloads/qbittorrent-geral:/downloads/geral
+      - /mnt/games-4tb/downloads/qbittorrent:/downloads/games
+    env_file:
+      - ${HOMELAB_ENV}
+    environment:
+      - TZ=${TZ}
+      - PUID=1000
+      - PGID=1000
+      - WEBUI_PORT=8095
+      - TORRENTING_PORT=6881
+    networks:
+      - cloudflare-net
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+
+  qbittorrent-exporter:
+    image: ghcr.io/martabal/qbittorrent-exporter:latest
+    container_name: qbittorrent-exporter
+    restart: unless-stopped
+    cpus: 0.10
+    mem_limit: 64m
+    pids_limit: 16
+    # Publicado pro Prometheus (zangetsu) alcancar via scrape cross-host.
+    ports:
+      - "192.168.15.215:8090:8090"
+    env_file:
+      - ${HOMELAB_ENV}
+    environment:
+      - TZ=${TZ}
+      - QBITTORRENT_BASE_URL=http://qbittorrent:8095
+      - QBITTORRENT_API_KEY=${QBITTORRENT_EXPORTER_API_KEY}
+      # exposes qbittorrent_info_torrent with a category label
+      - ENABLE_INCREASED_CARDINALITY=true
+    depends_on:
+      qbittorrent:
+        condition: service_started
+    networks:
+      - cloudflare-net
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"

@@ -1,0 +1,14 @@
+[Unit]
+Description=Disco local dedicado a jogos (HDD 4TB ex-QNAP, USB, urahara)
+After=local-fs-pre.target
+Before=local-fs.target
+OnFailure=notify-games-4tb-mount-failure.service
+
+[Mount]
+What=UUID=d108bad1-01c8-4946-af60-2921211e87dd
+Where=/mnt/games-4tb
+Type=ext4
+Options=defaults,noatime,nofail
+
+[Install]
+WantedBy=local-fs.target

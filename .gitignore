@@ -1,0 +1,40 @@
+# Secrets: never commit
+**/.env
+*.env
+!**/.env.example
+**/homepage/secrets.yaml
+
+# Local runtime data
+**/.env.local
+**/.env.*.local
+**/.dag.index
+
+# Exports that may carry credentials
+**/exports/
+!**/exports/.gitkeep
+
+# Local test artifacts
+/test-*.png
+/test-*.jpg
+/test-*.jpeg
+/test-*.pdf
+
+# Terraform: state lives in R2, never commit local state/cache
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+tfplan
+*.tfplan
+
+# One-off manual provisioning scripts (not reusable without editing)
+.claude/tmp/
+
+# Local Claude Code config with secrets (MCP plugin tokens etc.): never commit
+.claude/settings.local.json
+
+# IDE
+.idea/
+.vscode/
+.codex
+*.iml
