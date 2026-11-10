@@ -11,7 +11,9 @@ services:
     container_name: komodo-postgres
     restart: unless-stopped
     cpus: 0.30
-    mem_limit: 256m
+    # 512m, not 256m: steady state already sits at ~197MiB (77% of 256m) and the
+    # write burst of a Stack deploy pushed it over twice on 2026-11-10 (OOM killed).
+    mem_limit: 512m
     pids_limit: 64
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]

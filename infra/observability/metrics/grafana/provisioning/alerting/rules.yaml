@@ -186,7 +186,7 @@ groups:
           execErrState: Error
           for: 5m
           annotations:
-            summary: '[immich] - {{ if (gt $values.A.Value 0.0) }}not responding (NAS CIFS){{ else }}connectivity restored{{ end }}'
+            summary: '[immich] - NAS CIFS mount (/mnt/media/immich) unreachable or with device error'
           labels:
             severity: warning
             shortname: MOUNT
@@ -260,7 +260,7 @@ groups:
           execErrState: Error
           for: 5m
           annotations:
-            summary: '[gdrive] - {{ if (gt $values.A.Value 0.0) }}not responding (rclone quota unreliable for space){{ else }}connectivity restored{{ end }}'
+            summary: '[gdrive] - rclone mount (/mnt/remote) unreachable or with device error (quota makes the space check unreliable)'
           labels:
             severity: warning
             shortname: MOUNT
@@ -297,7 +297,7 @@ groups:
           execErrState: Error
           for: 5m
           annotations:
-            summary: '[paperless] - {{ if (gt $values.A.Value 0.0) }}not responding (NAS CIFS){{ else }}connectivity restored{{ end }}'
+            summary: '[paperless] - NAS CIFS mount (/mnt/media/paperless) unreachable or with device error'
           labels:
             severity: warning
             shortname: MOUNT
@@ -371,7 +371,7 @@ groups:
           execErrState: Error
           for: 5m
           annotations:
-            summary: '[backup-restic] - {{ if (gt $values.A.Value 0.0) }}not responding (NAS CIFS){{ else }}connectivity restored{{ end }}'
+            summary: '[backup-restic] - NAS CIFS mount (/mnt/backup) unreachable or with device error'
           labels:
             severity: warning
             shortname: MOUNT
@@ -445,7 +445,7 @@ groups:
           execErrState: Error
           for: 5m
           annotations:
-            summary: '[games-4tb] - {{ if (gt $values.A.Value 0.0) }}disk error (local, formerly NAS){{ else }}back to normal{{ end }}'
+            summary: '[games-4tb] - local disk mount (/mnt/games-4tb) unreachable or with device error'
           labels:
             severity: warning
             shortname: MOUNT
