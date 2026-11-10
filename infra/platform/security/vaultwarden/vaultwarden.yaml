@@ -14,11 +14,11 @@ services:
       - SIGNUPS_ALLOWED=false
       - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
       - SMTP_HOST=smtp.gmail.com
-      - SMTP_FROM=${ADMIN_EMAIL}
+      - SMTP_FROM=${VAULTWARDEN_SMTP_USER}
       - SMTP_FROM_NAME=Vaultwarden
       - SMTP_SECURITY=starttls
       - SMTP_PORT=587
-      - SMTP_USERNAME=${ADMIN_EMAIL}
+      - SMTP_USERNAME=${VAULTWARDEN_SMTP_USER}
       - SMTP_PASSWORD=${VAULTWARDEN_SMTP_PASSWORD}
     volumes:
       - /opt/apps/vaultwarden:/data

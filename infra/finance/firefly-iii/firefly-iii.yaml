@@ -41,6 +41,7 @@ services:
       - TZ=${TZ}
       - APP_ENV=production
       - APP_DEBUG=false
+      - SITE_OWNER=${FIREFLY_SITE_OWNER}
       - APP_KEY=${FIREFLY_APP_KEY}
       - DB_CONNECTION=pgsql
       - DB_HOST=firefly-db
