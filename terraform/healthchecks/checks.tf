@@ -84,37 +84,6 @@ resource "healthchecksio_check" "immich_album_naming" {
   channels = [data.healthchecksio_channel.homelab.id]
 }
 
-# The four stone_* checks moved out of this repo (side project, not homelab).
-# `removed` with destroy = false drops them from this state without deleting
-# them in Healthchecks. Delete this block after one successful apply.
-removed {
-  from = healthchecksio_check.stone_request_pix
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = healthchecksio_check.stone_request_machine
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = healthchecksio_check.stone_request_payment_link
-  lifecycle {
-    destroy = false
-  }
-}
-
-removed {
-  from = healthchecksio_check.stone_request_tapstone
-  lifecycle {
-    destroy = false
-  }
-}
-
 output "ping_urls" {
   value = {
     sqlite_backup          = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.sqlite_backup.id}"
