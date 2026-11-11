@@ -13,21 +13,8 @@ contactPoints:
             headers:
                 apikey: ${EVOLUTION_API_KEY}
             payload:
-                # The message is built into a variable and emitted with printf "%q",
-                # which produces a JSON-safe quoted string. Interpolating the summary
-                # directly into "text" breaks the payload whenever it contains a double
-                # quote, a newline or a backslash: the webhook answers 400 and the alert
-                # is lost silently (seen with the container-restart and OOM rules, whose
-                # summaries quote the container name).
                 template: |
-                    {{- $msg := "✅ *RESOLVED*" -}}
-                    {{- if eq .Status "firing" -}}{{- $msg = "🚨 *ALERT*" -}}{{- end -}}
-                    {{- range .Alerts -}}
-                    {{- $host := "" -}}
-                    {{- if .Labels.host -}}{{- $host = printf "[%s] - " .Labels.host -}}{{- end -}}
-                    {{- $msg = printf "%s\n*%s%s*\n%s" $msg $host .Labels.shortname .Annotations.summary -}}
-                    {{- end -}}
-                    {"number": "${GRAFANA_ALERT_WHATSAPP_JID}", "text": {{ $msg | printf "%q" }}}
+                    {"number": "${GRAFANA_ALERT_WHATSAPP_JID}", "text": "{{ if eq .Status "firing" }}🚨 *ALERT*{{ else }}✅ *RESOLVED*{{ end }}{{ range .Alerts }}\n*{{ if .Labels.host }}[{{ .Labels.host }}] - {{ end }}{{ .Labels.shortname }}*\n{{ .Annotations.summary }}{{ end }}"}
           disableResolveMessage: false
     - orgId: 1
       name: n8n-oom-autorestart

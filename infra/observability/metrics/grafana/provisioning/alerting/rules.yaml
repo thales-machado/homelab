@@ -485,7 +485,7 @@ groups:
           execErrState: Error
           for: 0s
           annotations:
-            summary: '[{{ $labels.host }}] - container "{{ $labels.name }}" restarted {{ $values.A.Value }}x in the last 5min'
+            summary: '[{{ $labels.host }}] - container *{{ $labels.name }}* restarted {{ $values.A.Value }}x in the last 5min'
           labels:
             severity: warning
             shortname: RESTART
@@ -561,7 +561,7 @@ groups:
           execErrState: Error
           for: 0s
           annotations:
-            summary: '[{{ $labels.host }}] - container "{{ $labels.name }}" was OOM killed {{ printf "%.0f" $values.A.Value }} time(s) in the last 5min'
+            summary: '[{{ $labels.host }}] - container *{{ $labels.name }}* was OOM killed {{ printf "%.0f" $values.A.Value }} time(s) in the last 5min'
           labels:
             severity: warning
             shortname: OOM
