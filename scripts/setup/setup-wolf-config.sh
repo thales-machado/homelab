@@ -80,6 +80,7 @@ APPS = {
         "memory": int(os.environ["UI_MEMORY_BYTES"]),
     },
     "RetroArch": {
+        "sys_ptrace": True,
         "image": os.environ["RA_IMAGE"],
         "mounts": [
             f"{nas}/roms:/roms:ro",
@@ -89,6 +90,7 @@ APPS = {
         "memory": int(os.environ["EMU_MEMORY_BYTES"]),
     },
     "EmulationStation": {
+        "sys_ptrace": True,
         "image": os.environ["ESDE_IMAGE"],
         "mounts": [
             f"{nas}/roms:/ROMs:ro",
@@ -117,6 +119,18 @@ def make_patch_json(spec):
         host["NanoCpus"] = spec["nano_cpus"]
         host["Memory"] = spec["memory"]
         host["MemorySwap"] = spec["memory"]
+        # Docker's default seccomp profile only allows kcmp for a container
+        # that has CAP_SYS_PTRACE. Without kcmp, Mesa cannot tell whether two
+        # DRM fds point at the same file description, logs
+        # "os_same_file_description couldn't determine ... bad things may
+        # happen" and guesses. Confirmed freeze: the emulator stops dead
+        # (0.02 CPU, GPU idle, container still Up, dmesg clean), and only
+        # stopping the app clears it. Narrower than seccomp=unconfined, which
+        # would drop the whole filter.
+        if spec.get("sys_ptrace"):
+            caps = host.setdefault("CapAdd", [])
+            if "SYS_PTRACE" not in caps:
+                caps.append("SYS_PTRACE")
         return f"{m.group(1)}{quote}{json.dumps(data, indent=2)}\n{quote}"
     return patch_json
 
