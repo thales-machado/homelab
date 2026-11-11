@@ -86,3 +86,41 @@ Wolf-UI, WolfRetroarch and WolfES-DE are created by Wolf itself through the Dock
 - Performance overlay: `Ctrl+Alt+Shift+S` on the PC client; on Moonlight Android it is "Show performance overlay" in the settings. UniFi's DPI does not see this traffic (the TV and urahara are on the same subnet, so it never reaches the gateway).
 - Pairing: Wolf logs `Insert pin at http://192.168.15.215:47989/pin/#<secret>`; open that URL and type the PIN Moonlight shows. It is also published as `wolf.lan.thalespm.me` (`cross-host.yml`). Wolf rewrites `config.toml` when pairing.
 - Wolf's app containers show up in Komodo but disappear on their own when the session closes.
+
+## The session freezes: zero-copy DMABuf on this AMD iGPU
+
+Symptom: the picture freezes, the controller and the keyboard stop responding, and the only way out is to close Moonlight, **stop** the app from Wolf's menu and start it again — reopening ES-DE without stopping it brings the frozen game back. It hit both RetroArch and standalone Dolphin, every system, several times an hour.
+
+It is not a performance problem, although it looks like one. Measured on the host during a freeze: CPU 4% median across 16 threads, load 0.6, GPU 7%, 18 GB of memory free, no swap, no cgroup throttling, the ROM disk reading 32 MB in two minutes, `dmesg` clean of any amdgpu, DRM, ring-timeout or GPU-reset line. Moonlight's own overlay was perfect at the same moment: 60.04 fps end to end, 0.00% frames dropped, 1 ms network latency, 0.18 ms decode — because Wolf keeps encoding and sending the last, unchanging frame.
+
+What the freeze actually looks like: the app container stays `Up` while its CPU falls from 0.55 core to **0.02**, and every thread of every process in it — the emulator, ES-DE, and `sway`, the nested compositor — sits in `futex_wait_queue` or `poll`, state `S`, with no thread in `D` and none inside a DRM `ioctl`. The whole graphics chain is idle, waiting for a buffer that never comes back.
+
+Wolf logs the cause at every session start:
+
+```
+basetransform: transform could not transform video/x-raw(memory:DMABuf),
+               format=DMA_DRM ... drm-format=AR24 in anything we support
+basetransform: warning: not negotiated
+dmabuf: gst_dmabuf_mem_unmap: Failed to synchronize DMABuf: Bad file descriptor (9)
+```
+
+This is a known upstream problem on AMD iGPUs: `games-on-whales/wolf#559` reports the same `not negotiated` on the DMABuf caps of `wolf_wayland_source`, and `#364` reports `WOLF_USE_ZERO_COPY: "FALSE"` as the workaround that avoids it. Hence `WOLF_USE_ZERO_COPY=FALSE` in `wolf.yaml`, which switches Wolf to the legacy pipeline (confirm with `docker logs wolf | grep -i pipeline` → `Using legacy pipeline on AMD`). The cost is one buffer copy per frame, and this host streams with the CPU at 4% and the GPU at 26%, so it has the headroom. Remove the variable once the zero-copy path is fixed upstream, and re-test a long session before trusting it.
+
+**Do not update the Wolf image to fix this.** `#559` reports the regression arriving *with* the newer Fedora-based image, where the zero-copy path on an AMD iGPU produces no video at all.
+
+### `CAP_SYS_PTRACE` on the app containers
+
+While diagnosing the above, the ES-DE container was logging
+
+```
+amdgpu: os_same_file_description couldn't determine if two DRM fds reference
+        the same file description. If they do, bad things may happen!
+```
+
+Docker's default seccomp profile allows `kcmp` only for a container that holds `CAP_SYS_PTRACE`, and Mesa uses `kcmp` to decide whether two DRM fds are the same file description. Without it Mesa guesses. `setup-wolf-config.sh` now adds `SYS_PTRACE` to `CapAdd` in `base_create_json` for the RetroArch and EmulationStation apps, which silences the warning; `seccomp=unconfined` would have worked too but drops the whole filter instead of one syscall.
+
+**This was not the cause of the freeze** — the freeze reproduced with the capability in place. It stays because the warning describes a real hazard, and removing it costs nothing.
+
+### Method note
+
+Four hypotheses died on the way here, each to the same mistake: reading `max` over a long window instead of the distribution. A single bad sample made the host look CPU-saturated (3 samples of 268 above 0.8, median 0.042) and made a disk burst look like sustained load. Use median, p95 and "how many samples crossed the threshold"; `max` alone tells you almost nothing.

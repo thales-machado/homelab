@@ -18,16 +18,9 @@ services:
     environment:
       - TZ=${TZ}
       - WOLF_RENDER_NODE=/dev/dri/renderD128
-      # Zero-copy off: the DMABuf path is broken on this AMD iGPU. The log
-      # shows "not negotiated" on video/x-raw(memory:DMABuf) AR24 and
-      # "Failed to synchronize DMABuf: Bad file descriptor" on every session,
-      # and the session then freezes with the whole graphics chain idle
-      # (every thread in futex/poll, no DRM ioctl, dmesg clean, Moonlight
-      # still receiving 60 fps of an unchanging frame). Upstream has the same
-      # signature on AMD iGPUs (games-on-whales/wolf#559) and reports the
-      # legacy pipeline as the workaround (#364). Costs a buffer copy, which
-      # this host can afford: CPU sits at 4% and the GPU at 26% while
-      # streaming. Remove once the zero-copy path is fixed upstream.
+      # Zero-copy off: on this AMD iGPU the DMABuf path freezes the whole
+      # session. Costs one buffer copy per frame, which this host can afford.
+      # Symptom, evidence and upstream issues: docs/wolf/wolf-setup.md.
       - WOLF_USE_ZERO_COPY=FALSE
     volumes:
       - /opt/apps/wolf:/etc/wolf:rw

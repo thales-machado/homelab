@@ -119,14 +119,9 @@ def make_patch_json(spec):
         host["NanoCpus"] = spec["nano_cpus"]
         host["Memory"] = spec["memory"]
         host["MemorySwap"] = spec["memory"]
-        # Docker's default seccomp profile only allows kcmp for a container
-        # that has CAP_SYS_PTRACE. Without kcmp, Mesa cannot tell whether two
-        # DRM fds point at the same file description, logs
-        # "os_same_file_description couldn't determine ... bad things may
-        # happen" and guesses. Confirmed freeze: the emulator stops dead
-        # (0.02 CPU, GPU idle, container still Up, dmesg clean), and only
-        # stopping the app clears it. Narrower than seccomp=unconfined, which
-        # would drop the whole filter.
+        # Docker's default seccomp profile allows kcmp only with
+        # CAP_SYS_PTRACE; without it Mesa cannot compare DRM fds. Narrower
+        # than seccomp=unconfined. See docs/wolf/wolf-setup.md.
         if spec.get("sys_ptrace"):
             caps = host.setdefault("CapAdd", [])
             if "SYS_PTRACE" not in caps:
