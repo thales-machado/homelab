@@ -165,6 +165,28 @@ scrape_configs:
       - targets:
           - https://homepage.thalespm.me
           - https://vaultwarden.thalespm.me
+          - https://app.lab.thalespm.me/healthz
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Lab Kubernetes cluster (platform-engineering-labs, k8s/local), watched from
+  # outside: when its control plane is down, anything running inside it is down
+  # too. /readyz is anonymous on a kubeadm cluster; the certificate is signed by
+  # the cluster CA, hence the insecure module.
+  - job_name: "blackbox-k8s-lab"
+    metrics_path: /probe
+    params:
+      module: [http_2xx_insecure]
+    static_configs:
+      - targets:
+          - https://192.168.15.215:6443/readyz
+        labels:
+          cluster: k8s-local
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

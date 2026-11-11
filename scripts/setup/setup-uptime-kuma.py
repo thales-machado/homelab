@@ -106,6 +106,12 @@ MONITORS = [
     ("Samba",             "192.168.15.215",               "Content",       60, None, False, 445),
     ("TandoorRecipes",    "http://192.168.15.215:8083",   "Content",       60),
 
+    # --- Lab K8s ---
+    # Lab cluster in platform-engineering-labs (k8s/local). The API server uses the
+    # cluster CA, so TLS verification is off; /readyz is anonymous on kubeadm.
+    ("K8s lab API server", "https://192.168.15.215:6443/readyz", "Lab K8s", 60, None, True),
+    ("K8s lab app",        "https://app.lab.thalespm.me/healthz", "Lab K8s", 60),
+
     # --- Smart Home ---
     ("Home Assistant",    "http://192.168.15.215:8123",   "Smart Home",    60),
 

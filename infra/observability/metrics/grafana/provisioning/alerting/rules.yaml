@@ -687,6 +687,83 @@ groups:
             shortname: UNIFI
             host: WAN
           isPaused: false
+        # Lab Kubernetes cluster (platform-engineering-labs, k8s/local), probed
+        # from here on purpose: an alert living inside that cluster dies with it.
+        # Its control plane was down 41h once and nothing noticed (PM-0006).
+        - uid: k8s-lab-apiserver-down
+          title: K8s lab API server unreachable
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: probe_success{job="blackbox-k8s-lab"}
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 2m
+          annotations:
+            summary: 'Lab API server /readyz failing for 2m: pods keep running, nothing can change in the cluster. Check the static pods with crictl on the node (PM-0006).'
+          labels:
+            severity: critical
+            shortname: K8SLAB
+          isPaused: false
+        - uid: k8s-lab-app-down
+          title: K8s lab app not answering
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: probe_success{instance="https://app.lab.thalespm.me/healthz"}
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 2m
+          annotations:
+            summary: 'app.lab.thalespm.me/healthz failing for 2m. If the API server alert is quiet, the problem is the app, Traefik or the LoadBalancer IP.'
+          labels:
+            severity: critical
+            shortname: K8SLAB
+          isPaused: false
 
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
