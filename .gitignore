@@ -38,3 +38,5 @@ tfplan
 .vscode/
 .codex
 *.iml
+
+**/path/
