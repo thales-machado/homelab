@@ -1,0 +1,42 @@
+services:
+  calnode:
+    # Calendly-style booking page: a single Go binary with an embedded SQLite
+    # database, so no Postgres and no Redis. On urahara for the memory, and its
+    # database is picked up by backup-sqlite-urahara.sh.
+    # Public on purpose and without an access group - see the exception list in
+    # CONVENTIONS.md: the point of the link is that a stranger can open it.
+    image: ghcr.io/calnode/calnode:latest
+    container_name: calnode
+    restart: unless-stopped
+    cpus: 0.50
+    mem_limit: 256m
+    pids_limit: 64
+    # Published on urahara's LAN IP so the Uptime Kuma check on zangetsu can
+    # reach it, and so the page still works on the LAN if the tunnel is down.
+    ports:
+      - "192.168.15.215:8093:3000"
+    env_file:
+      - ${HOMELAB_ENV}
+    environment:
+      - TZ=${TZ}
+      - BASE_URL=https://calnode.thalespm.me
+      - DATABASE_URL=sqlite:///data/calnode.db
+      # Mandatory: without them the app falls back to an ephemeral key and
+      # every stored credential (Google Calendar) is lost on restart.
+      - CALNODE_ENCRYPTION_KEY=${CALNODE_ENCRYPTION_KEY}
+      - CALNODE_RECOVERY_SECRET=${CALNODE_RECOVERY_SECRET}
+      # The TCP peer is always the tunnel container, so without this every
+      # visitor shares one login rate-limit bucket. Subnet of cloudflare-net.
+      - TRUSTED_PROXY_CIDRS=172.23.0.0/24
+    volumes:
+      - /opt/apps/calnode:/data
+    depends_on:
+      dockflare-agent:
+        condition: service_started
+    networks:
+      - cloudflare-net
+    labels:
+      dockflare.enable: "true"
+      com.centurylinklabs.watchtower.enable: "true"
+      dockflare.hostname: "calnode.thalespm.me"
+      dockflare.service: "http://calnode:3000"

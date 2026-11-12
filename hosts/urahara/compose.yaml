@@ -38,6 +38,7 @@ include:
   - ../../infra/platform/networking/pi-hole/pi-hole.yaml
   - ../../infra/platform/networking/tailscale/tailscale.yaml
   - ../../infra/smart-home/home-assistant/home-assistant.yaml
+  - ../../infra/utilities/calnode/calnode.yaml
   - ../../infra/utilities/it-tools/it-tools.yaml
   - ../../infra/utilities/trilium/trilium.yaml
   - ../../infra/utilities/vikunja/vikunja.yaml

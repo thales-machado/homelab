@@ -271,6 +271,13 @@
           key: "{{HOMEPAGE_VAR_HOMEASSISTANT_KEY}}"
 
 - Utilities:
+    - Calnode:
+        icon: calendar.png
+        href: https://calnode.thalespm.me
+        description: Booking Page
+        server: urahara
+        container: calnode
+
     - IT-Tools:
         icon: it-tools.png
         href: https://it-tools.thalespm.me

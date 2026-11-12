@@ -44,6 +44,7 @@ backup_db() {
 }
 
 for db in \
+    /opt/apps/calnode/calnode.db \
     /opt/apps/home-assistant/config/home-assistant_v2.db \
     /opt/apps/trilium/document.db \
     /opt/apps/crowdsec/data/crowdsec.db \

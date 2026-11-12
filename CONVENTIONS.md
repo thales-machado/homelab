@@ -159,6 +159,7 @@ Raise them only with a documented reason in a comment (e.g. Wolf's `pids_limit`,
 - `HOMELAB_ENV` is set per host in `/etc/environment` and points to `/opt/homelab/hosts/<host>/.env`.
 - Each `hosts/<host>/` also needs a physical `.env` in the folder: Compose interpolates `${VAR}` in YAML from the working directory's `.env`, a mechanism separate from `env_file:`. `include:` resolves relative paths against the fragment, which is why a `.env` in `infra/` would not work.
 - Scripts shared between hosts read `$HOMELAB_ENV`; never hardcode `hosts/<host>/.env` in them. Scripts/DAGs that only make sense on one host may hardcode that host.
+- Every variable belongs to a `# --- <Service> ---` section of each host's `.env.example`, never appended loose at the end nor dropped into an unrelated section. A variable for an existing service goes inside that service's section; a new service gets a new section at the end of the file. The same holds for the real `.env` on each host.
 - systemd units that call these scripts need `EnvironmentFile=/etc/environment`; systemd does not inherit it the way login sessions do.
 
 **Network**: never a `networks:` definition block in a service yaml. Only reference:
@@ -300,6 +301,7 @@ Services where Cloudflare Access (MFA) would break normal use. Do not add an acc
 - `vaultwarden`: shared password vault used by several people from native clients.
 - `it-tools`: stateless tools, nothing to protect.
 - `tandoor`: used from a mobile app (kitshn) and by non-admin accounts; protected by native login rate limiting (Tandoor 2.6.1+) and strong per-account passwords instead of platform MFA.
+- `calnode`: booking page whose whole purpose is that strangers can open the link and pick a slot.
 - `thalesmachado-net`: public portfolio site, must be reachable without login.
 
 Rule: a public service is never given `homelab-admin` by assumption. If no access group is chosen, the label is omitted and the service is added to this list.

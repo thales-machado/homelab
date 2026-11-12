@@ -92,6 +92,7 @@ MONITORS = [
     ("Homepage",         "http://homepage:3000",          "Utilities",     60),
     ("OpenSpeedTest",     "http://openspeedtest:3000",    "Utilities",     60),
     ("IT-Tools",         "http://192.168.15.215:8092",    "Utilities",     60),
+    ("Calnode",          "http://192.168.15.215:8093",    "Utilities",     60),
     ("Vikunja",          "http://192.168.15.215:3456",    "Utilities",     60),
     ("TriliumNext",      "http://192.168.15.215:8091",    "Utilities",     60),
     ("qBittorrent",      "http://192.168.15.215:8095",    "Utilities",     60),
