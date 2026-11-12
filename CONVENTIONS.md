@@ -112,6 +112,12 @@ Metrics: VictoriaMetrics (Prometheus-compatible, viewed through Grafana). Logs: 
 4. Critical scheduled jobs (backup, sync) get a Healthchecks check (`terraform/healthchecks/`, see `docs/backup.md`).
 5. Rerun the whole checklist after any large migration (reverse proxy, Docker manager, etc.); those are what historically left the gaps.
 
+An alert summary never contains a double quote. The WhatsApp contact point
+builds its JSON payload by hand and interpolates the summary raw, so a quoted
+container name makes the payload invalid and the webhook answers `400`. Two
+rules carried one for months and never delivered anything. Use `*asterisks*`
+for emphasis, which WhatsApp renders as bold.
+
 ## Docker image policy
 
 - Default tag `:latest`; fallback `:lts`, `:stable` or the latest version.
