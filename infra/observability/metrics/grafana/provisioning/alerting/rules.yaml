@@ -915,6 +915,43 @@ groups:
             severity: warning
             shortname: K8SLAB
           isPaused: false
+        - uid: k8s-lab-no-lb-announcement
+          title: K8s lab LoadBalancer IP not announced
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: k8slabprom001
+              model:
+                expr: sum(metallb_speaker_announced) or vector(0)
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 5m
+          annotations:
+            summary: 'No MetalLB speaker is announcing any LoadBalancer IP. Traefik is unreachable on its address even if its pods are healthy, which is PM-0005. The lab always has at least one LoadBalancer Service, so zero means trouble.'
+          labels:
+            severity: critical
+            shortname: K8SLAB
+          isPaused: false
 
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
