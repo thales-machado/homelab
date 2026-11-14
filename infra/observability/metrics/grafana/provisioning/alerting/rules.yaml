@@ -1025,7 +1025,7 @@ groups:
           execErrState: Error
           for: 10m
           annotations:
-            summary: 'On *{{ $labels.instance }}* the binary *{{ $labels.binary }}* no longer matches its baseline. containerd never verifies the extracted file, only the compressed layer, and that gap is what PM-0006 ran into. Do not restart that container before reading the postmortem.'
+            summary: 'On *{{ $labels.host }}* the binary *{{ $labels.binary }}* no longer matches its baseline. containerd never verifies the extracted file, only the compressed layer, and that gap is what PM-0006 ran into. Do not restart that container before reading the postmortem.'
           labels:
             severity: critical
             shortname: K8SLAB
@@ -1062,7 +1062,7 @@ groups:
           execErrState: Error
           for: 1h
           annotations:
-            summary: 'The weekly binary integrity check on *{{ $labels.instance }}* has not run for more than 8 days. A textfile metric keeps serving its last value forever, so a silent timer looks exactly like a healthy one.'
+            summary: 'The weekly binary integrity check on *{{ $labels.host }}* has not run for more than 8 days. A textfile metric keeps serving its last value forever, so a silent timer looks exactly like a healthy one.'
           labels:
             severity: warning
             shortname: K8SLAB
