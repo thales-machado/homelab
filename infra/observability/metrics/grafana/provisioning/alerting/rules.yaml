@@ -952,6 +952,43 @@ groups:
             severity: critical
             shortname: K8SLAB
           isPaused: false
+        - uid: k8s-lab-cross-node-network
+          title: K8s lab pod-to-pod traffic between nodes failing
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: k8slabprom001
+              model:
+                expr: min(probe_success{path="cross-node"})
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 3m
+          annotations:
+            summary: 'A pod on urahara cannot reach a pod on zangetsu for 3min. Compare with the same-node probe: if that one passes, the CNI between the nodes is broken while both nodes still report Ready (PM-0003).'
+          labels:
+            severity: critical
+            shortname: K8SLAB
+          isPaused: false
 
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
