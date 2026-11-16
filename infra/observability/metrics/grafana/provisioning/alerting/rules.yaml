@@ -1141,6 +1141,84 @@ groups:
             severity: warning
             shortname: K8SLAB
           isPaused: false
+        # SLO burn rate for lab-app (ADR 0017): 99.9% over 30 days, a budget of
+        # 43m12s. Two windows on purpose: the long one says the problem is
+        # real, the short one says it is still happening, so neither fires
+        # about an outage that ended twenty minutes ago.
+        - uid: k8s-lab-slo-fast-burn
+          title: K8s lab SLO fast burn
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 43200
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: '(1 - avg_over_time(probe_success{instance="https://app.lab.thalespm.me/healthz"}[1h])) > 0.0144 and (1 - avg_over_time(probe_success{instance="https://app.lab.thalespm.me/healthz"}[5m])) > 0.0144'
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 2m
+          annotations:
+            summary: 'lab-app is burning its error budget 14x too fast: at this rate the 30-day budget of 43m is gone in about 2 days. Availability over the last hour is below 98.6%.'
+          labels:
+            severity: critical
+            shortname: K8SLAB
+          isPaused: false
+        - uid: k8s-lab-slo-slow-burn
+          title: K8s lab SLO slow burn
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 43200
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: '(1 - avg_over_time(probe_success{instance="https://app.lab.thalespm.me/healthz"}[6h])) > 0.006 and (1 - avg_over_time(probe_success{instance="https://app.lab.thalespm.me/healthz"}[30m])) > 0.006'
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0
+                        type: gt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 15m
+          annotations:
+            summary: 'lab-app is burning its error budget 6x too fast: at this rate the 30-day budget of 43m is gone in about 5 days. Not urgent tonight, but it is the next thing to fix.'
+          labels:
+            severity: warning
+            shortname: K8SLAB
+          isPaused: false
 
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
