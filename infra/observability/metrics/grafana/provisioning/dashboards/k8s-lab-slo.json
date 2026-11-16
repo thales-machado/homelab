@@ -75,7 +75,7 @@
       "id": 2,
       "type": "gauge",
       "title": "Error budget remaining",
-      "description": "100% means no budget spent. Below 0 the SLO is missed for this window.",
+      "description": "100% means no budget spent, 0% means the 43m12s is gone. Counted from failed probes, so a partial window does not inflate it.",
       "datasource": {
         "type": "prometheus",
         "uid": "ffssrfrz5yxogd"
@@ -92,7 +92,7 @@
             "type": "prometheus",
             "uid": "ffssrfrz5yxogd"
           },
-          "expr": "1 - ((1 - avg_over_time(probe_success{instance=\"https://app.lab.thalespm.me/healthz\"}[30d])) / 0.001)",
+          "expr": "1 - (((count_over_time(probe_success{instance=\"https://app.lab.thalespm.me/healthz\"}[30d]) - sum_over_time(probe_success{instance=\"https://app.lab.thalespm.me/healthz\"}[30d])) * 15 / 60) / 43.2)",
           "refId": "A",
           "legendFormat": "",
           "editorMode": "code",
@@ -142,7 +142,7 @@
       "id": 3,
       "type": "stat",
       "title": "Budget spent",
-      "description": "Minutes of the 43m12s budget already used in this window.",
+      "description": "Real minutes of failed probes in the window, counted sample by sample. Not the error ratio scaled to 30 days: while the window is partial that scaling forecasts instead of reporting.",
       "datasource": {
         "type": "prometheus",
         "uid": "ffssrfrz5yxogd"
@@ -159,7 +159,7 @@
             "type": "prometheus",
             "uid": "ffssrfrz5yxogd"
           },
-          "expr": "(1 - avg_over_time(probe_success{instance=\"https://app.lab.thalespm.me/healthz\"}[30d])) * 30 * 24 * 60",
+          "expr": "(count_over_time(probe_success{instance=\"https://app.lab.thalespm.me/healthz\"}[30d]) - sum_over_time(probe_success{instance=\"https://app.lab.thalespm.me/healthz\"}[30d])) * 15 / 60",
           "refId": "A",
           "legendFormat": "",
           "editorMode": "code",
