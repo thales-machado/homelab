@@ -270,7 +270,7 @@
       "id": 5,
       "type": "timeseries",
       "title": "Burn rate",
-      "description": "How many times faster than sustainable the budget is being spent. 1 spends it exactly over 30 days. The alerts fire at 14.4x over 1h and 6x over 6h.",
+      "description": "How many times faster than sustainable the budget is being spent. 1 spends it exactly over 30 days. The alerts fire at 14.4x over 1h and 6x over 6h. The two lines are the alert thresholds; the axis grows past 20 only if a burn actually goes higher.",
       "datasource": {
         "type": "prometheus",
         "uid": "ffssrfrz5yxogd"
@@ -317,7 +317,12 @@
             "lineWidth": 2,
             "fillOpacity": 10,
             "showPoints": "never",
-            "spanNulls": true
+            "spanNulls": true,
+            "thresholdsStyle": {
+              "mode": "line"
+            },
+            "axisSoftMax": 20,
+            "axisSoftMin": 0
           },
           "thresholds": {
             "mode": "absolute",
