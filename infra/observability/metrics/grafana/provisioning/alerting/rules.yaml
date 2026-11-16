@@ -1067,6 +1067,80 @@ groups:
             severity: warning
             shortname: K8SLAB
           isPaused: false
+        - uid: k8s-lab-cert-expiring
+          title: K8s lab certificate expiring soon
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: k8slabprom001
+              model:
+                expr: (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 15
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 1h
+          annotations:
+            summary: 'Certificate *{{ $labels.name }}* expires in less than 15 days. Renewal is automatic, so this firing means renewal has been failing, and every site behind that certificate breaks when it runs out.'
+          labels:
+            severity: warning
+            shortname: K8SLAB
+          isPaused: false
+        - uid: k8s-lab-pod-restarting
+          title: K8s lab pod restarting repeatedly
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: k8slabprom001
+              model:
+                expr: sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[1h]))
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 5
+                        type: gt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 15m
+          annotations:
+            summary: 'Pod *{{ $labels.pod }}* in *{{ $labels.namespace }}* restarted more than 5 times in an hour. A pod that crashes and recovers never enters CrashLoopBackOff, so the other rule stays quiet: cert-manager-cainjector reached 491 restarts unnoticed (PM-0001).'
+          labels:
+            severity: warning
+            shortname: K8SLAB
+          isPaused: false
 
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
