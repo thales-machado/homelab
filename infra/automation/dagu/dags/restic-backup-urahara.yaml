@@ -1,5 +1,14 @@
 name: restic-backup-urahara
-description: Daily Restic backup of /opt and /etc on urahara - the DAG runs on zangetsu and executes remotely over SSH (Dagu has no per-step remote DOCKER_HOST)
+description: |
+  Daily Restic backup of /opt and /etc on urahara - the DAG runs on zangetsu and
+  executes remotely over SSH (Dagu has no per-step remote DOCKER_HOST).
+
+  Read bandwidth is capped at 100 MB/s. Uncapped, this job reads the NVMe at
+  400 MB/s while writing to the NAS over CIFS, which stretches the read
+  pressure over an hour. /var/lib/etcd lives on the same device: on 2026-11-17
+  etcd's WAL fsync p99 went past 8 seconds during this backup, the API server
+  failed its probes, and the kubelet spent the rest of the day killing and
+  recreating the control plane. See PM-0010 in platform-engineering-labs.
 
 schedule: "CRON_TZ=America/Sao_Paulo 45 2 * * *"
 
@@ -25,6 +34,7 @@ steps:
       shell: /bin/sh
       command: >-
         docker run --rm
+        --device-read-bps /dev/nvme0n1:100mb
         -v /opt/homelab/scripts:/opt/homelab/scripts:ro
         -v /opt/homelab/hosts/urahara/.env:/opt/homelab/hosts/urahara/.env:ro
         -v /opt:/source/opt:ro
