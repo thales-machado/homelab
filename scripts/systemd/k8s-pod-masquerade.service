@@ -1,0 +1,13 @@
+[Unit]
+Description=SNAT for Kubernetes pod traffic leaving this node (zangetsu only)
+Documentation=https://github.com/thales-machado/platform-engineering-labs/blob/main/k8s/local/docs/postmortems/0009-no-pod-egress-on-zangetsu.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/homelab/scripts/networking/k8s-pod-masquerade.sh
+
+[Install]
+WantedBy=multi-user.target
