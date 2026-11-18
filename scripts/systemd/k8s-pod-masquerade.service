@@ -7,9 +7,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-# bash explicitly: every script in this repository is committed with mode
-# 644, so systemd cannot exec one directly (status=203/EXEC).
-ExecStart=/bin/bash /opt/homelab/scripts/networking/k8s-pod-masquerade.sh
+ExecStart=/opt/homelab/scripts/networking/k8s-pod-masquerade.sh
 
 [Install]
 WantedBy=multi-user.target

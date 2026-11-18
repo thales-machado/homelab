@@ -230,6 +230,8 @@ scripts/
 └── systemd/      # real systemd units, referenced by scripts from several categories
 ```
 
+**A script started by a systemd unit must be committed executable.** The units use `ExecStart=/opt/homelab/scripts/<folder>/<script>`, and systemd cannot exec a file without the bit: it fails with `status=203/EXEC`. Found on 2026-11-18 with `tailscale-forward.service`, which had been failing every five minutes since the zangetsu reboot of 2026-11-16, leaving the `DOCKER-USER` ACCEPT rules unapplied and the subnet router silently dropping traffic to other LAN hosts. The six `notify-*-mount-failure.service` units had the same defect, which would have silenced exactly the alert they exist to send.
+
 A backup script for a new app goes in `backup/`, not a new folder. Create a subfolder only for genuinely distinct functionality. When a script moves, update every reference to it, including `command:` in Dagu DAGs (`infra/automation/dagu/dags/`) and `ExecStart=` in `scripts/systemd/` units, which use absolute paths (`/opt/homelab/scripts/<folder>/<script>`).
 
 ## Service templates
