@@ -22,6 +22,7 @@ steps:
       command: >-
         docker run --rm
         -v /opt/homelab/scripts:/opt/homelab/scripts:ro
+        -v /opt/apps/calnode:/opt/apps/calnode
         -v /opt/apps/home-assistant/config:/opt/apps/home-assistant/config
         -v /opt/apps/trilium:/opt/apps/trilium
         -v /opt/apps/crowdsec/data:/opt/apps/crowdsec/data

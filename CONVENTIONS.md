@@ -376,6 +376,7 @@ Full details: `docs/backup.md`.
   - Postgres: `scripts/backup/backup-postgres.sh` (`pg_dump`), DAG `postgres-backup`. The runner image must be the same Postgres major as or newer than the newest server in the stack; `pg_dump` refuses newer servers.
   - Snapshots go to `/opt/apps/<app>/db-backup/`.
 - A new service with its own database is added to the existing script; never a new DAG.
+- The script and the DAG that runs it are one unit: a database added to a backup script must get, in the same commit, its app directory in the DAG's volumes and any credential the script reads in the DAG's exports. Two silent week-long failures came from exactly this (calnode missing from the volumes, `EVOLUTION_DB*` missing from the exports): the script dies on that entry, the DAG exits non-zero, and every other database in the same run still gets backed up, so only the Healthchecks alert shows it.
 - `scripts/backup/restic-excludes.txt` excludes the live database files (`*.sqlite`/`*.db` + `-wal`/`-shm` directly under `/opt/apps/<app>/`, and `/opt/apps/<app>/db/`). Its patterns are non-recursive so `db-backup/` is never excluded. Edit it only for a database outside those patterns.
 - Filesystem backup is Restic (`/opt` + `/etc`), one repository per host on a fixed NAS mount (`/mnt/backup/<host>`), each with its own backup + prune DAG pair. Never a central repository for several hosts.
 - urahara's DAGs run from zangetsu's Dagu via `action: ssh.run`. A `command:` with `$`/`$()` must escape `\$` **and** set `shell: /bin/sh`, or the variable arrives empty.
