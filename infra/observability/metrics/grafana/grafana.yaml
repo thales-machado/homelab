@@ -4,7 +4,9 @@ services:
     container_name: grafana
     restart: unless-stopped
     cpus: 1.00
-    mem_limit: 512m
+    # 1g, not 512m: p99 at 439MiB and a 510MiB peak on 2026-10-23, 99.7% of the
+    # old ceiling. Never OOM-killed, but with no margin left for a spike.
+    mem_limit: 1g
     pids_limit: 128
     user: "0:0"
     volumes:
