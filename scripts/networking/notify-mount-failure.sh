@@ -13,7 +13,11 @@ PAYLOAD="{\"action\":\"mount-failure\",\"mount\":\"${MOUNT_LABEL}\",\"host\":\"$
 
 SIGNATURE="sha256=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')"
 
-curl -s -X POST "https://n8n.lan.thalespm.me/webhook/homelab-notify" \
+# IP:port, never the name: this runs at boot, right when a mount failed, and
+# Pi-hole and Traefik are not up yet. curl exited 6 (could not resolve) on
+# 2026-11-19, so the alert meant for this moment could never fire.
+curl -sS --retry 10 --retry-delay 15 --retry-connrefused --max-time 30 \
+  -X POST "${N8N_WEBHOOK:-http://192.168.15.215:8097/webhook/homelab-notify}" \
   -H "Content-Type: application/json" \
   -H "X-Hub-Signature-256: ${SIGNATURE}" \
   -d "$PAYLOAD"

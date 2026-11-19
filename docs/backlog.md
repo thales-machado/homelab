@@ -72,6 +72,19 @@ is a major upgrade with a schema migration, so it needs its own plan, and
 Watchtower will not do it on its own: upstream still points `:latest` at the
 1.x line.
 
+## CIFS mounts fail on the first attempt at boot, on urahara (2026-11-19)
+
+The reboot of 11-19 fired `OnFailure=` for `mnt-media-immich` and
+`mnt-media-paperless` at 19:02:49, and both were `active mounted` minutes
+later without anyone touching them. So the mount units try before the network
+is ready, fail, and something mounts them afterwards.
+
+That makes every reboot produce a mount-failure alert that is not real, which
+is the fastest way to teach yourself to ignore the one that is. Worth finding
+out what ordering they need (`After=network-online.target` is the obvious
+suspect, and the host already proved that target unreliable, see the Docker
+network delay in CONVENTIONS) and what retries them today.
+
 ## Commit f284b56 has a placeholder subject
 
 It landed on `main` as `Generating commit message...`, the IDE's temporary text.
