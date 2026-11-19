@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the Healthchecks textfile metrics
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+Unit=healthchecks-textfile.service
+
+[Install]
+WantedBy=timers.target

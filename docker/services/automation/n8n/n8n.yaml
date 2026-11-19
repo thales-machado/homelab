@@ -20,6 +20,13 @@ services:
       - N8N_HOST=n8n.thalespm.me
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
+      # Without WEBHOOK_URL, n8n composes public webhook URLs from
+      # PROTOCOL/HOST/PORT and produces https://n8n.thalespm.me:5678/...,
+      # a hostname the tunnel serves on 443 and a port nothing answers
+      # publicly. N8N_EDITOR_BASE_URL was already right, so the editor
+      # links worked and only the webhook URLs were wrong: that is where
+      # the Healthchecks integration that never delivered came from.
+      - WEBHOOK_URL=https://n8n.thalespm.me/
       - N8N_PROXY_HOPS=1
       - N8N_SECURE_COOKIE=false
       - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}

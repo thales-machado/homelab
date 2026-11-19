@@ -23,6 +23,8 @@ on:
       - "docker/hosts/zangetsu/**"
       - "docker/hosts/urahara/**"
       - "docker/services/**"
+      - "scripts/**"
+      - "terraform/**"
 
 jobs:
   detect-changes:
@@ -64,6 +66,11 @@ jobs:
             while IFS= read -r f; do
               [ -z "$f" ] && continue
               case "$f" in "$hostdir"/*) echo true; return ;; esac
+              # scripts/ and terraform/ belong to no include: list, so without
+              # this they never trigger a deploy and both hosts keep whatever they
+              # happened to have when some unrelated service last changed. The
+              # terraform state is applied from /opt/homelab on the host.
+              case "$f" in scripts/*|terraform/*) echo true; return ;; esac
               while IFS= read -r p; do
                 [ -z "$p" ] && continue
                 case "$f" in "$p"/*|"$p") echo true; return ;; esac

@@ -1,0 +1,11 @@
+[Unit]
+Description=Publish Healthchecks check states as node-exporter textfile metrics
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+# systemd does not inherit /etc/environment the way a login shell does, and the
+# script reads HOMELAB_ENV from it.
+EnvironmentFile=/etc/environment
+ExecStart=/opt/homelab/scripts/monitoring/healthchecks-textfile.sh

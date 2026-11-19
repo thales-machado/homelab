@@ -2,14 +2,31 @@ data "healthchecksio_channel" "homelab" {
   kind = "webhook"
 }
 
-# The old "vaultwarden-backup" check, generalized: same id and ping URL
+# Renamed again, to what actually pings it: the DAG n8n-backup-urahara carries
+# this check's id, while the DAG named sqlite-backup pinged nothing at all. The
+# green light on "sqlite-backup" was borrowed from another job on another host,
+# and zangetsu's own SQLite backup went unwatched. The move keeps the id, the
+# ping URL and the history: with this provider a name change is an in-place
+# update, which is how this same check was once renamed from vaultwarden-backup.
 moved {
-  from = healthchecksio_check.vaultwarden_backup
-  to   = healthchecksio_check.sqlite_backup
+  from = healthchecksio_check.sqlite_backup
+  to   = healthchecksio_check.n8n_backup_urahara
 }
 
-resource "healthchecksio_check" "sqlite_backup" {
-  name     = "sqlite-backup"
+resource "healthchecksio_check" "n8n_backup_urahara" {
+  name     = "n8n-backup-urahara"
+  schedule = "35 2 * * *"
+  timezone = "America/Sao_Paulo"
+  grace    = 900
+  tags     = ["dagu", "backup"]
+  channels = [data.healthchecksio_channel.homelab.id]
+}
+
+# The check the sqlite-backup DAG never had. Named for its host, like every
+# other pair here. Its id only exists after the first apply: read it from the
+# ping_urls output and wire it into the DAG.
+resource "healthchecksio_check" "sqlite_backup_zangetsu" {
+  name     = "sqlite-backup-zangetsu"
   schedule = "30 2 * * *"
   timezone = "America/Sao_Paulo"
   grace    = 900
@@ -84,9 +101,27 @@ resource "healthchecksio_check" "immich_album_naming" {
   channels = [data.healthchecksio_channel.homelab.id]
 }
 
+# Created through the API by scripts/monitoring/check-wolf-image-updates.sh
+# before this file existed; adopted with `terraform import`, never recreated,
+# so the id the script looks up by name stays the same.
+#
+# Unusual on purpose: it pings /fail to report that a new image digest is
+# waiting on GHCR, so "down" here means "there is an update to review", not
+# "the job broke". Monthly, because that is the DAG's schedule.
+resource "healthchecksio_check" "wolf_image_check" {
+  name     = "wolf-image-check"
+  schedule = "0 9 1 * *"
+  timezone = "America/Sao_Paulo"
+  grace    = 172800
+  tags     = ["dagu", "homelab"]
+  channels = [data.healthchecksio_channel.homelab.id]
+}
+
 output "ping_urls" {
   value = {
-    sqlite_backup          = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.sqlite_backup.id}"
+    sqlite_backup_zangetsu = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.sqlite_backup_zangetsu.id}"
+    n8n_backup_urahara     = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.n8n_backup_urahara.id}"
+    wolf_image_check       = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.wolf_image_check.id}"
     sqlite_backup_urahara  = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.sqlite_backup_urahara.id}"
     postgres_backup        = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.postgres_backup.id}"
     restic_backup_zangetsu = "https://healthchecks.lan.thalespm.me/ping/${healthchecksio_check.restic_backup_zangetsu.id}"
