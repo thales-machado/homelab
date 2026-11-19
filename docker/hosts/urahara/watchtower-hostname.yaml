@@ -1,0 +1,8 @@
+# Watchtower builds its notification title from the container's own hostname
+# ("Watchtower updates on <hostname>"), which is the container id unless this
+# is set: every alert arrived as [49e334ed846a] with no way to tell which host
+# sent it, and the Homelab Notify workflow reads the host out of that title.
+# watchtower.yaml is host-agnostic, so the name belongs here.
+services:
+  watchtower:
+    hostname: urahara
