@@ -71,15 +71,66 @@ flowchart LR
 
 ## Services
 
-| Category | Services |
-|---|---|
-| Platform | Traefik, DockFlare, cloudflared, Pi-hole (HA), keepalived, Nebula Sync, Tailscale, CrowdSec, Vaultwarden, Komodo, Watchtower, Autoheal, Healthchecks |
-| Observability | VictoriaMetrics, Grafana, Loki, Grafana Alloy, exporters, Uptime Kuma, Scrutiny, Dozzle |
-| Automation | Dagu, n8n |
-| Content | Immich, Paperless-ngx, Stirling PDF, Tandoor |
-| Integration | Evolution API |
-| Media | Samba, rclone, Wolf (GPU game streaming over Moonlight) |
-| Other | Home Assistant, Firefly III, Homepage, Trilium, Vikunja, IT-Tools, OpenSpeedTest, qBittorrent |
+Generated from the `include:` list of every host entry point by
+`scripts/inventory/inventory.py`. CI and the pre-commit hook fail when it
+is out of date, so the table cannot drift from what is deployed.
+
+<!-- inventory:start -->
+
+| Service | Runtime | Host | Category |
+|---|---|---|---|
+| `dagu` | docker | `zangetsu` | `automation` |
+| `n8n` | docker | `urahara` | `automation` |
+| `immich` | docker | `urahara` | `content` |
+| `paperless-ngx` | docker | `urahara` | `content` |
+| `stirling-pdf` | docker | `urahara` | `content` |
+| `tandoor` | docker | `urahara` | `content` |
+| `firefly-iii` | docker | `zangetsu` | `finance` |
+| `firefly-iii-data-importer` | docker | `zangetsu` | `finance` |
+| `evolution-api` | docker | `urahara` | `integration` |
+| `rclone` | docker | `urahara` | `media-player` |
+| `samba` | docker | `urahara` | `media-player` |
+| `wolf` | docker | `urahara` | `media-player` |
+| `blackbox-exporter` | docker | `zangetsu` | `observability` |
+| `cadvisor` | docker | `urahara`, `zangetsu` | `observability` |
+| `dozzle` | docker | `zangetsu` | `observability` |
+| `dozzle-agent` | docker | `urahara` | `observability` |
+| `grafana` | docker | `zangetsu` | `observability` |
+| `grafana-alloy` | docker | `urahara`, `zangetsu` | `observability` |
+| `loki` | docker | `zangetsu` | `observability` |
+| `node-exporter` | docker | `urahara`, `zangetsu` | `observability` |
+| `postgres-exporter` | docker | `zangetsu` | `observability` |
+| `redis-exporter` | docker | `urahara`, `zangetsu` | `observability` |
+| `scrutiny` | docker | `zangetsu` | `observability` |
+| `smartctl-exporter` | docker | `urahara`, `zangetsu` | `observability` |
+| `unpoller` | docker | `zangetsu` | `observability` |
+| `uptime-kuma` | docker | `zangetsu` | `observability` |
+| `victoriametrics` | docker | `zangetsu` | `observability` |
+| `autoheal` | docker | `urahara`, `zangetsu` | `platform` |
+| `cloudflared-agent` | docker | `zangetsu` | `platform` |
+| `crowdsec` | docker | `urahara` | `platform` |
+| `dockflare` | docker | `zangetsu` | `platform` |
+| `dockflare-agent` | docker | `urahara` | `platform` |
+| `healthchecks` | docker | `zangetsu` | `platform` |
+| `keepalived` | docker | `urahara`, `zangetsu` | `platform` |
+| `komodo` | docker | `urahara`, `zangetsu` | `platform` |
+| `nebula-sync` | docker | `zangetsu` | `platform` |
+| `pi-hole` | docker | `urahara`, `zangetsu` | `platform` |
+| `tailscale` | docker | `urahara`, `zangetsu` | `platform` |
+| `traefik` | docker | `zangetsu` | `platform` |
+| `vaultwarden` | docker | `zangetsu` | `platform` |
+| `watchtower` | docker | `urahara`, `zangetsu` | `platform` |
+| `home-assistant` | docker | `urahara` | `smart-home` |
+| `calnode` | docker | `urahara` | `utilities` |
+| `homepage` | docker | `zangetsu` | `utilities` |
+| `it-tools` | docker | `urahara` | `utilities` |
+| `openspeedtest` | docker | `zangetsu` | `utilities` |
+| `qbittorrent` | docker | `urahara` | `utilities` |
+| `thalesmachado-net` | docker | `zangetsu` | `utilities` |
+| `trilium` | docker | `urahara` | `utilities` |
+| `vikunja` | docker | `urahara` | `utilities` |
+
+<!-- inventory:end -->
 
 ## Conventions
 

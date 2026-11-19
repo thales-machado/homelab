@@ -58,6 +58,16 @@ jobs:
       - name: compile every script
         run: find scripts -name '*.py' -print0 | xargs -0 python -m py_compile
 
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: README service table matches the host include lists
+        run: python scripts/inventory/inventory.py --check
+
   terraform:
     runs-on: ubuntu-latest
     steps:

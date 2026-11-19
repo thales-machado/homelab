@@ -30,3 +30,17 @@ repos:
         args: [--maxkb=2048]
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  # Local hook: the table is generated from this repo's own include: lists, so
+  # there is nothing to pull from upstream. language: python, not system, so
+  # pre-commit supplies the interpreter: this repo is committed from WSL and
+  # from Windows, and `python3` does not exist on the second. The same check
+  # runs in CI, which covers a clone without `pre-commit install`.
+  - repo: local
+    hooks:
+      - id: inventory
+        name: README service inventory is current
+        entry: python scripts/inventory/inventory.py --check
+        language: python
+        pass_filenames: false
+        files: ^(docker/hosts/.*\.ya?ml|k8s/apps/.*|scripts/inventory/.*\.py|README\.md)$
