@@ -17,6 +17,7 @@ import os
 import sqlite3
 import sys
 from socketio.exceptions import TimeoutError as SocketTimeout
+from uptime_kuma_api.exceptions import Timeout as KumaTimeout
 from uptime_kuma_api import UptimeKumaApi, MonitorType, NotificationType, DockerType
 
 # api.get_monitors() hangs forever in production (any lib version), so the
@@ -182,12 +183,15 @@ def list_monitors_db(db_path=KUMA_DB_PATH):
 
 
 def mutate(fn, *args, **kwargs):
-    """add/editMonitor and addDockerHost only ack after the server resends the
-    whole monitor list, so the ack can time out after the write happened (or,
-    for edit_monitor, before it was sent). Callers always check SQLite."""
+    """add/editMonitor, addDockerHost and deleteMonitor only ack after the
+    server resends the whole monitor list, so the ack can time out after the
+    write happened (or, for edit_monitor, before it was sent). Callers always
+    check SQLite. Two unrelated exception classes mean the same thing here:
+    socket.io's own TimeoutError, and the library's Timeout raised by its
+    wait_for_event wrapper around MONITOR_LIST."""
     try:
         return fn(*args, **kwargs)
-    except SocketTimeout:
+    except (SocketTimeout, KumaTimeout):
         return None
 
 
