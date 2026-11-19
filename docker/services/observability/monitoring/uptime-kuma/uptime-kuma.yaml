@@ -3,13 +3,16 @@ services:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
     restart: unless-stopped
-    # 1.00 and 512m, measured on 2026-11-19 with 82 monitors on the RPi 5:
-    # memory.events counted 97110 hits against the 256 MiB ceiling, with
-    # memory.current parked at 98.9% of it. Never OOM-killed, because the
-    # kernel reclaims instead, and that reclaim storm is what made the
-    # monitor-list socket event never complete, the UI render an empty
-    # dashboard and a single DELETE take 2.2s. cpu.stat showed 231 throttled
-    # periods out of 3445, part of it spent reclaiming.
+    # 1.00 and 512m since 2026-11-19. 256 MiB was genuinely tight (170 MiB of
+    # anonymous memory at rest) but it was not the cause of the stall, and
+    # memory.events hitting the ceiling 97110 times was mostly page cache
+    # being reclaimed, not starvation: docker stats subtracts inactive_file,
+    # memory.current does not. The real cause was the database. 1.x computes
+    # uptime straight from the heartbeat table, so every monitor-list emit ran
+    # 82 aggregates over 6.6M rows in a 963 MB file and never finished inside
+    # the socket timeout: the dashboard rendered empty and the setup script
+    # timed out on every list call. Retention is what keeps that bounded; these
+    # limits only buy page cache for it.
     cpus: 1.00
     mem_limit: 512m
     pids_limit: 64
