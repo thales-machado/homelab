@@ -179,11 +179,12 @@ failover; on a one-node cluster it means no LoadBalancer address ever appears at
 all. Remove the label at build time, and check it again after every
 `kubeadm upgrade`, which is where it came back once before.
 
-The address pool is a handful of LAN addresses outside the router's DHCP range
-and clear of what is already taken: the hosts (`.214`, `.215`), the NAS (`.200`),
-the keepalived VIP (`.248`) and the lab's `.241`. Confirm the DHCP range on the
-router before fixing the pool; that is the one input this document cannot
-supply.
+The address pool is `192.168.15.240/29`, eight addresses reserved for service
+addresses in the LAN plan (see `CONVENTIONS.md`, LAN addressing) and outside the
+DHCP pool, which ends at `.119`. It is declared as a prefix rather than a
+start/stop range in `CiliumLoadBalancerIPPool`. Eight is generous on purpose:
+with Gateway API in front, HTTP traffic consumes one of them. The TV that holds
+`.240` today moves off it before the pool is created.
 
 **Ingress and certificates: inside the cluster.** The alternative was real and
 worth stating: the homelab already has Traefik terminating a Let's Encrypt
@@ -258,8 +259,6 @@ Kubernetes as a skill, and it is easier to scope correctly once something real
 is running.
 
 ## Still open, and deliberately
-
-The LoadBalancer address pool, pending the router's DHCP range.
 
 Whether `/var/lib/etcd` eventually moves off the NVMe that Restic reads. The
 read cap makes this unnecessary today; it becomes a question again only if the

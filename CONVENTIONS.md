@@ -9,7 +9,7 @@ This file holds the conventions this repository follows and the reasons behind t
 | `zangetsu` | Raspberry Pi 5 | `192.168.15.214` | `docker/hosts/zangetsu/` | Platform core: Traefik, DockFlare master, primary Pi-hole, observability, Dagu, Komodo Core |
 | `urahara` | GMKtec K8 (Ryzen 7 8845HS) | `192.168.15.215` | `docker/hosts/urahara/` | Content and media: Immich, Paperless, n8n, Home Assistant, Wolf, replica Pi-hole |
 
-Other fixed addresses: `192.168.15.248` is the Pi-hole VIP (keepalived), `192.168.15.200` the NAS.
+Other fixed addresses: `192.168.15.248` is the Pi-hole VIP (keepalived), `192.168.15.200` the NAS. Full plan in [LAN addressing](#lan-addressing).
 
 - Each host's entry point is `docker/hosts/<host>/compose.yaml`, whose `include:` list points to fragments in `docker/services/`. Run Compose commands from inside `docker/hosts/<host>/`.
 - The repo is checked out at `/opt/homelab` on each host. Each host's real `.env` lives at `/opt/homelab/docker/hosts/<host>/.env` and is never committed (see `docker/hosts/<host>/.env.example`).
@@ -41,6 +41,33 @@ Every network is declared **only** in the host's `compose.yaml` (`name`, `subnet
 
 - **`cloudflare-net`**: main network for all services. Subnet and gateway differ per host.
 - **`dockflare-internal`**: isolates `docker-socket-proxy`, which is not on `cloudflare-net`. Only services that need `DOCKER_HOST=tcp://docker-socket-proxy:2375` join it. Services that only query the Docker API go through the proxy; the few that cannot are listed in [Docker socket exceptions](#docker-socket-exceptions).
+
+## LAN addressing
+
+`192.168.15.0/24`. The router serves one contiguous DHCP range per network, so the
+pool can only grow upward and whatever sits directly above it is what would have to
+be renumbered. The pool is sized once, at 100 addresses, to avoid that.
+
+| Range | Purpose | Notes |
+|---|---|---|
+| `.1` - `.19` | Network gear | switch, APs, room for more |
+| `.20` - `.119` | DHCP pool | 100 dynamic addresses |
+| `.120` - `.199` | DHCP reservation by MAC | TV, desktops, printer, predictable IoT |
+| `.200` - `.209` | Storage | address set on the device: `.200` NAS |
+| `.210` - `.219` | Hosts | address set on the device: `.214` zangetsu, `.215` urahara |
+| `.220` - `.239` | free | infrastructure growth |
+| `.240` - `.247` | Service addresses | `seireitei` LoadBalancer pool, `192.168.15.240/29` |
+| `.248` | Pi-hole VIP | keepalived |
+| `.250` | Gateway | fixed |
+
+`.249` and `.251`-`.254` are free.
+
+The dividing rule is that **only what must work without DHCP gets its address set on
+the device**: the NAS, both hosts, the VIP and the gateway. Everything else
+predictable is a reservation by MAC, which is still DHCP answering the same address
+every time, and stays under the router's control. `.240`-`.247` holds no machines at
+all: Cilium owns those addresses and announces them over L2, so they must never fall
+inside the DHCP pool.
 
 ## Cross-host services (IP:port pattern)
 
