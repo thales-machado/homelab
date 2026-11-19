@@ -15,6 +15,12 @@ services:
       - CRON=0 */6 * * *
       - FULL_SYNC=true
       - RUN_GRAVITY=true
+    # It syncs once on start, and a force deploy starts it alongside a Pi-hole
+    # that is still booting: the sync then dies on connection refused and the
+    # alert fires for something that fixes itself on the next run.
+    depends_on:
+      pi-hole:
+        condition: service_healthy
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     networks:

@@ -491,18 +491,23 @@ groups:
             shortname: RESTART
           isPaused: false
         - uid: nebula-sync-failed
-          title: Nebula Sync failed (Pi-hole replica)
+          title: Nebula Sync has not completed (Pi-hole replica)
           condition: C
           data:
             - refId: A
               relativeTimeRange:
-                from: 600
+                from: 46800
                 to: 0
               datasourceUid: efswmxbcxua68c
               model:
                 queryType: instant
-                # the container stays Up when the sync aborts; only the log shows it
-                expr: 'sum(count_over_time({container="nebula-sync"} |= "Sync failed" [10m]))'
+                # Absence of success, not presence of failure. The container
+                # stays Up when the sync aborts, so only the log shows it, but
+                # a single "Sync failed" is usually a Pi-hole still booting and
+                # the next run fixes it. 13h covers two of the 6h cron cycles,
+                # and a missing "Sync completed" also catches the container
+                # never running at all, which counting failures never would.
+                expr: 'sum(count_over_time({container="nebula-sync"} |= "Sync completed" [13h]))'
                 intervalMs: 1000
                 maxDataPoints: 43200
                 refId: A
@@ -512,18 +517,18 @@ groups:
                 conditions:
                     - evaluator:
                         params:
-                            - 0
-                        type: gt
+                            - 1
+                        type: lt
                 expression: A
                 intervalMs: 1000
                 maxDataPoints: 43200
                 refId: C
                 type: threshold
-          noDataState: OK
+          noDataState: Alerting
           execErrState: Error
-          for: 0s
+          for: 10m
           annotations:
-            summary: '[nebula-sync] - sync with the replica (urahara) failed - check the container logs'
+            summary: '[nebula-sync] - no successful sync with the replica (urahara) in 13h, against a 6h schedule - check the container logs'
           labels:
             severity: warning
             shortname: PIHOLE
