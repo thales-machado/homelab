@@ -1,6 +1,5 @@
-# Redeploys the homelab-zangetsu / homelab-urahara Komodo stacks through
-# their HMAC listener, with the per-host path filter done here because the
-# listener has none.
+# Drives the homelab-zangetsu / homelab-urahara Komodo stacks through their
+# HMAC listener, which has no path filtering of its own.
 #
 # homelab-urahara has its own webhook_secret (set on the Stack);
 # homelab-zangetsu leaves the field empty and falls back to the Core's global
@@ -8,28 +7,24 @@
 # Stack actually uses. Both stacks use webhook_force_deploy: true (see
 # komodo.yaml for the DeployStackIfChanged bug).
 #
-# Instead of a static path filter, this reads the include: of each
-# docker/hosts/<host>/compose.yaml to know which docker/services/ fragments
-# that host really uses, and triggers a stack only when a changed file falls
-# inside one of them (or inside its own docker/hosts/<host>/). A fragment
-# included by both hosts triggers both; a host-exclusive fragment triggers
-# only that host.
+# Every push refreshes both hosts: RefreshStackCache clones and diffs without
+# touching a container, so /opt/homelab always matches main and git log on a
+# host tells the truth. Filtering who gets a refresh was worse than useless,
+# because it left each clone at whatever commit last happened to match, and
+# the only way to fix that by hand is a git pull on the host, which fails with
+# "unable to unlink old" since Periphery writes those files as root.
 #
-# Two executions, not one. Files under scripts/ and terraform/ have to exist in
-# /opt/homelab, but no container is built from them, so they get /refresh
-# (RefreshStackCache: clone and diff only) instead of a deploy that walks the
-# whole stack. Anything that changes a compose fragment still gets /deploy.
+# A refresh escalates to /deploy only for the host that actually runs the
+# changed code. Rather than a static path list, this reads the include: of
+# each docker/hosts/<host>/compose.yaml to learn which docker/services/
+# fragments that host uses, and deploys when a changed file falls inside one
+# of them or inside its own docker/hosts/<host>/. A fragment included by both
+# hosts deploys both; a host-exclusive fragment deploys only that host.
 name: Deploy Homelab
 
 on:
   push:
     branches: [main]
-    paths:
-      - "docker/hosts/zangetsu/**"
-      - "docker/hosts/urahara/**"
-      - "docker/services/**"
-      - "scripts/**"
-      - "terraform/**"
 
 jobs:
   detect-changes:
@@ -66,24 +61,18 @@ jobs:
           Z_PREFIXES=$(get_prefixes docker/hosts/zangetsu/compose.yaml)
           U_PREFIXES=$(get_prefixes docker/hosts/urahara/compose.yaml)
 
-          # Prints the execution this host needs: deploy, refresh or none.
+          # Prints the execution this host needs: deploy, or refresh otherwise.
           match_host() {
             local hostdir="$2"
-            local result=none
             while IFS= read -r f; do
               [ -z "$f" ] && continue
               case "$f" in "$hostdir"/*) echo deploy; return ;; esac
-              # scripts/ and terraform/ belong to no include: list. Without a
-              # rule of their own they never reach the host at all, and both
-              # hosts keep whatever they happened to have when some unrelated
-              # service last changed. They do not justify recreating anything.
-              case "$f" in scripts/*|terraform/*) result=refresh; continue ;; esac
               while IFS= read -r p; do
                 [ -z "$p" ] && continue
                 case "$f" in "$p"/*|"$p") echo deploy; return ;; esac
               done <<< "$1"
             done <<< "$CHANGED"
-            echo "$result"
+            echo refresh
           }
 
           echo "zangetsu=$(match_host "$Z_PREFIXES" docker/hosts/zangetsu)" >> "$GITHUB_OUTPUT"
@@ -91,7 +80,6 @@ jobs:
 
   deploy-zangetsu:
     needs: detect-changes
-    if: needs.detect-changes.outputs.zangetsu != 'none'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Komodo (homelab-zangetsu)
@@ -109,7 +97,6 @@ jobs:
 
   deploy-urahara:
     needs: detect-changes
-    if: needs.detect-changes.outputs.urahara != 'none'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Komodo (homelab-urahara)
