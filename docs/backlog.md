@@ -37,6 +37,41 @@ are inert. They are worth removing: a drifted duplicate that silently loses to
 the one below it is exactly what cost half a day on 2026-11-19, when a fix was
 applied to the copy that never runs.
 
+## Uptime Kuma: empty groups are pruned by hand (2026-11-19)
+
+`setup-uptime-kuma.py` skips anything of type `group`, so a group never gets
+deleted by mistake. The cost showed up when the two lab monitors left and
+`Lab K8s` stayed behind with zero children, reporting `Child inaccessible`
+until it was removed by hand. The criterion for automating it is safe and was
+measured that day: of the fourteen groups, only the lab's had zero children,
+every other one had between one and sixteen.
+
+## Uptime Kuma: every deploy registers a down event (2026-11-19)
+
+Recreating Traefik, Grafana, Loki or Dagu makes their monitors go down and
+alert. Measured rather than assumed: those monitors already run `maxretries 3`
+with `retry_interval 20`, so Uptime Kuma waits a full minute, and Traefik was
+still out for ninety seconds during the deploy on the night of 11-18. Now that
+every push deploys both hosts, this gets more frequent.
+
+So it is a trade-off, not a misconfiguration. Absorbing a deploy needs five or
+six retries, which delays a real outage alert from one minute to two. The
+alternative is an automatic maintenance window around a deploy: it delays
+nothing and costs real work. Decide with these numbers, not by impression.
+
+## Uptime Kuma: 1.x recomputes uptime from the raw table (2026-11-19)
+
+1.x has no aggregate tables, so every monitor-list emit runs one aggregate per
+monitor over the whole `heartbeat` table. At 6.6M rows in a 963 MB file that
+stopped finishing inside the socket timeout and took the dashboard down with
+it. Retention was cut to 30 days and the database shrank to 296 KB, which
+contains the problem rather than curing it.
+
+2.x adds `stat_minutely`, `stat_hourly` and `stat_daily` for exactly this. It
+is a major upgrade with a schema migration, so it needs its own plan, and
+Watchtower will not do it on its own: upstream still points `:latest` at the
+1.x line.
+
 ## Commit f284b56 has a placeholder subject
 
 It landed on `main` as `Generating commit message...`, the IDE's temporary text.
