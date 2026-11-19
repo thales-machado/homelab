@@ -3,20 +3,18 @@
 # es-de) with the current digest of each tag on GHCR and alerts via
 # Healthchecks when one changed. Updates nothing: the pins are deliberate and
 # bumping them requires a stream test.
-# The "wolf-image-check" check is created via the Healthchecks API
-# (idempotent via unique=name); requires a write-enabled HEALTHCHECKS_API_KEY.
-# Runs in the Dagu container (docker.run, alpine + curl + jq) with the repo
-# and zangetsu's .env mounted. DRY_RUN=1 only compares and prints, without
+# The "wolf-image-check" check is declared in terraform/healthchecks; this
+# script only pings it, through HC_PING_URL from the DAG. It used to create
+# the check itself over the API on every run, which silently reverted whatever
+# Terraform had applied. DRY_RUN=1 only compares and prints, without
 # contacting Healthchecks.
 set -eu
 
 REPO_DIR="${REPO_DIR:-/opt/homelab}"
-ENV_FILE="${HOMELAB_ENV:-$REPO_DIR/docker/hosts/zangetsu/.env}"
-HC_URL="${HC_URL:-http://healthchecks:8000}"
+PING_URL="${HC_PING_URL:-}"
 DRY_RUN="${DRY_RUN:-0}"
 ACCEPT="application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json"
 
-PING_URL=""
 on_exit() {
   status=$?
   if [ "$status" -ne 0 ] && [ -n "$PING_URL" ]; then
@@ -25,15 +23,9 @@ on_exit() {
 }
 trap on_exit EXIT
 
-if [ "$DRY_RUN" != "1" ]; then
-  HC_KEY="$(grep '^HEALTHCHECKS_API_KEY=' "$ENV_FILE" | cut -d= -f2-)"
-  PING_URL="$(curl -fsS -H "X-Api-Key: $HC_KEY" -H 'Content-Type: application/json' \
-    -d '{"name":"wolf-image-check","slug":"wolf-image-check","tags":"homelab","desc":"Wolf pinned digests vs. GHCR (monthly)","timeout":2764800,"grace":172800,"unique":["name"]}' \
-    "$HC_URL/api/v3/checks/" | jq -r '.ping_url // empty')"
-  if [ -z "$PING_URL" ]; then
-    echo "Error: the Healthchecks API returned no ping_url (HEALTHCHECKS_API_KEY must be write-enabled)"
-    exit 1
-  fi
+if [ "$DRY_RUN" != "1" ] && [ -z "$PING_URL" ]; then
+  echo "Error: HC_PING_URL is not set (see the wolf-image-check DAG)"
+  exit 1
 fi
 
 updates=""

@@ -109,7 +109,7 @@ Metrics: VictoriaMetrics (Prometheus-compatible, viewed through Grafana). Logs: 
    Every monitor needs the `WhatsApp - Homelab Notify` notification. Its "default" flag only applies in the UI, so a monitor created through the API without `notificationIDList` never alerts (20 of 41 monitors were silent). The script reconciles this on every run. The script reads the monitor list from SQLite because the `uptime-kuma-api` monitor-list event hangs indefinitely; mutations still go through the API.
 2. `docker/services/observability/metrics/victoriametrics/prometheus.yml`: add the scrape job if the service exposes metrics (Postgres: multi-target pattern above).
 3. `docker/services/observability/metrics/grafana/provisioning/alerting/rules.yaml`: grep for the old container name before removing a service and fix any rule that depends on it.
-4. Critical scheduled jobs (backup, sync) get a Healthchecks check (`terraform/healthchecks/`, see `docs/backup.md`).
+4. Critical scheduled jobs (backup, sync) get a Healthchecks check (`terraform/healthchecks/`, see `docs/backup.md`). The check is declared there and nowhere else: a job pings a URL it is handed, it never creates or updates its own check over the API. `check-wolf-image-updates.sh` did exactly that (`unique=["name"]`), so every monthly run silently reverted the schedule and tags Terraform had applied.
 5. Rerun the whole checklist after any large migration (reverse proxy, Docker manager, etc.); those are what historically left the gaps.
 
 An alert summary never contains a double quote. The WhatsApp contact point

@@ -110,6 +110,7 @@ resource "healthchecksio_check" "immich_album_naming" {
 # "the job broke". Monthly, because that is the DAG's schedule.
 resource "healthchecksio_check" "wolf_image_check" {
   name     = "wolf-image-check"
+  desc     = "Wolf pinned digests vs. GHCR. A failure means an update is available, not a broken job."
   schedule = "0 9 1 * *"
   timezone = "America/Sao_Paulo"
   grace    = 172800

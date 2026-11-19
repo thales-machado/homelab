@@ -18,4 +18,4 @@ steps:
           cloudflare-net: {}
       volumes:
         - /opt/homelab:/opt/homelab:ro
-      command: sh -c "apk add --no-cache --quiet curl jq && sh /opt/homelab/scripts/monitoring/check-wolf-image-updates.sh"
+      command: sh -c "apk add --no-cache --quiet curl jq && HC_PING_URL=http://healthchecks:8000/ping/8a581962-74a8-4bf5-8f70-0fed16968bfa sh /opt/homelab/scripts/monitoring/check-wolf-image-updates.sh"

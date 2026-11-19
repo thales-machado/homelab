@@ -23,4 +23,4 @@ steps:
         - /opt/apps/uptime-kuma:/opt/apps/uptime-kuma
         - /opt/apps/healthchecks:/opt/apps/healthchecks
         - /opt/apps/scrutiny:/opt/apps/scrutiny
-      command: sh -c "apk add --no-cache --quiet sqlite && sh /opt/homelab/scripts/backup/backup-sqlite.sh"
+      command: sh -c "apk add --no-cache --quiet sqlite && sh /opt/homelab/scripts/backup/backup-sqlite.sh && wget -q -O /dev/null http://healthchecks:8000/ping/09b917b7-75f7-42bf-8cdd-cdabd6040661 || { wget -q -O /dev/null http://healthchecks:8000/ping/09b917b7-75f7-42bf-8cdd-cdabd6040661/fail; exit 1; }"
