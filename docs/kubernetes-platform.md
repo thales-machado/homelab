@@ -117,11 +117,11 @@ migrated application gets a specific record pointing at the MetalLB address.
 Migration is one DNS line, rollback is deleting it. For public access,
 `cloudflared` stays in Docker and its tunnel points at the cluster address.
 
-**Load balancer.** MetalLB in L2 mode. BGP needs a router that speaks it and
-kube-vip does the same job with fewer users. The reason to rule out Cilium L2
-announcements was that they need kube-proxy replacement, which needs BTF,
-which zangetsu does not have. With zangetsu out of the cluster that reason is
-gone, so this is open again rather than decided: see the kernel answer below.
+**Load balancer.** MetalLB in L2 mode was the decision here, because BGP needs
+a router that speaks it, kube-vip has fewer users, and Cilium L2 announcements
+need kube-proxy replacement, which needs BTF, which zangetsu does not have.
+**Superseded on 2026-11-19 by the ADR below**: zangetsu is not in the cluster,
+so that reason disappeared and the choice is Cilium.
 
 **Namespaces.** One per application. The namespace is the unit of RBAC, quota,
 NetworkPolicy and deletion, so `kubectl delete ns <app>` uninstalls cleanly.
@@ -134,16 +134,136 @@ since what zangetsu carries is exactly what has to outlive a cluster outage.
 A second node would not have bought availability either: two etcd members are
 worse than one, because a two-member cluster loses quorum when either fails.
 
-## Open decisions
+## Platform ADR, 2026-11-19
 
-**Blocking the build**
+Written with step 3 answered. These unblock the build. Every one of them is
+decided for *this* homelab, on one node that shares a machine with forty Docker
+containers, and not copied from the lab, which had two nodes, a TSDB inside the
+cluster and nothing depending on it.
 
-Install method and version. kubeadm again keeps the alignment with the CKA.
+**Install method and version: kubeadm, pinned, on the 1.37 line.** kubeadm keeps
+the alignment with the CKA and keeps the lab's upgrade runbook usable. k3s was
+considered and rejected for the opposite reason to the usual one: it is lighter,
+and lighter here means hiding the control plane this exists to practise
+operating. The 1.37 line is where the lab already is (`v1.37.2`), so the upgrade
+path has been walked once. Pin `kubernetesVersion` to an exact patch and check
+`pkgs.k8s.io` for the current one at build time rather than reusing a number
+from this document, the same rule the repo applies to Docker tags.
 
-Pod and Service CIDRs, and the cluster name.
+**Cluster name: `seireitei`.** It has to be distinguishable from `lab-local` in a
+kubeconfig context at a glance, and it keeps the naming family the hosts already
+use.
 
-Load balancer, reopened: MetalLB or Cilium L2 announcements, now that every
-node in the cluster has BTF.
+**CIDRs: pod `10.60.0.0/16`, service `10.96.0.0/12`.** The service range is
+kubeadm's default and matches the lab, which costs nothing because the ranges
+are cluster-internal and the lab is destroyed first. The pod range deliberately
+is not: pod traffic reaches the host's routing and nftables, so a range that
+cannot be confused with the lab's `10.244`/`10.245` is worth the five seconds it
+costs to choose. Neither collides with the LAN (`192.168.15.0/24`), the Docker
+networks (`172.22.0.0/24` on zangetsu, `172.23.0.0/24` on urahara) or Tailscale
+(`100.64.0.0/10`).
+
+**Load balancer: Cilium, with kube-proxy replacement and L2 announcements.**
+Every reason to rule this out was zangetsu's missing BTF, and zangetsu is not in
+the cluster. On urahara it removes two components at once, MetalLB and
+kube-proxy, and the Calico-to-Cilium migration in the lab means the dataplane is
+not new ground.
+
+Two things have to be said plainly about it. With one node there is no failover:
+the announced address is a stable address, not availability, and nobody should
+later read `type: LoadBalancer` as high availability. And PM-0005 generalises in
+a way that bites harder here than it did in the lab: kubeadm labels the control
+plane `node.kubernetes.io/exclude-from-external-load-balancers`, and announcement
+implementations skip a node carrying it. On a two-node cluster that cost a
+failover; on a one-node cluster it means no LoadBalancer address ever appears at
+all. Remove the label at build time, and check it again after every
+`kubeadm upgrade`, which is where it came back once before.
+
+The address pool is a handful of LAN addresses outside the router's DHCP range
+and clear of what is already taken: the hosts (`.214`, `.215`), the NAS (`.200`),
+the keepalived VIP (`.248`) and the lab's `.241`. Confirm the DHCP range on the
+router before fixing the pool; that is the one input this document cannot
+supply.
+
+**Ingress and certificates: inside the cluster.** The alternative was real and
+worth stating: the homelab already has Traefik terminating a Let's Encrypt
+wildcard, and a cluster service could be just another entry in `cross-host.yml`,
+costing no new components at all. It is rejected because it would make every
+application migration an edit on zangetsu, which is the host that has to stay
+boring, and because an ingress the cluster does not own is one less thing being
+practised. So: Gateway API in the cluster, cert-manager with DNS-01 through
+Cloudflare, and its own ACME account.
+
+Pi-hole keeps the `*.lan.thalespm.me` wildcard pointing at the homelab Traefik,
+and each migrated application gets a specific record pointing at the cluster
+address. One line to migrate, one line deleted to roll back.
+
+**Nothing Argo applies may contain a placeholder.** PM-0007 is the cheapest
+lesson in the set: a file is a template for a reader or desired state for a
+controller, never both, and `Synced` only means the cluster matches Git, not
+that Git is right. The CI workflow gains a check that fails on `<PLACEHOLDER>`
+patterns under `k8s/`, which is the action that stayed open in that postmortem.
+
+**The disk is the constraint that belongs to this homelab.** PM-0010 is the only
+postmortem that was caused from outside Kubernetes entirely, and its cause is
+still here: `restic-backup-urahara` reads `/opt` nightly on the machine that
+will carry etcd, and a backup reading at 400 MB/s put etcd's WAL fsync past 8
+seconds and the control plane into a 15-hour restart loop.
+
+Three decisions follow, all before the first application:
+
+- The cluster's local storage root is excluded in `scripts/backup/restic-excludes.txt`.
+  CloudNativePG and Velero already write that data to S3, so Restic walking it is
+  both a second copy and the thing that starved etcd.
+- The `--device-read-bps` cap on the backup's `docker run` stays. One line took
+  WAL fsync from 8192 ms to 41 ms and control-plane restarts from 13 to 0.
+- An alert on `etcd_disk_wal_fsync_duration_seconds` p99 above 100 ms for 5
+  minutes exists before anything depends on the cluster, in the homelab Grafana.
+  Four hours of that metric preceded the first visible symptom and nothing was
+  watching it.
+
+This homelab is in a better position than the lab was, and the reason is worth
+naming: Prometheus, Loki and the TSDB stay in Docker, so the cluster's disk has
+far less for a backup to read in the first place.
+
+**A resource ceiling, which the lab never needed.** urahara has 28 GiB and
+already runs around forty containers, including the ones that repair everything
+else. The cluster gets `kubeReserved` and `systemReserved` set at install, a
+`ResourceQuota` and a `LimitRange` per namespace from day one, and a total
+budget well under what is free. A cluster that can starve the Docker services is
+a cluster that can take out its own recovery tools, which is the same bootstrap
+rule this document opens with, applied to memory instead of to dependencies.
+
+**CoreDNS gets the stub zone on day one.** PM-0011: the `forward` plugin balances
+across every resolver in `/etc/resolv.conf` rather than falling back like the C
+library does, so with a split horizon half of every lookup for a homelab
+hostname returns NXDOMAIN. A `thalespm.me:53` stub forwarding to the Pi-hole VIP
+goes in Git with its own Argo Application, knowing kubeadm rewrites that
+ConfigMap on upgrade and Argo puts it back within three minutes.
+
+**Alerting stays outside the cluster, and so do the probes.** `vmagent`
+remote-writes to the existing VictoriaMetrics, Alloy ships logs to the existing
+Loki, rules live in the homelab Grafana on the WhatsApp path that was repaired
+on 2026-11-19. Every cluster hostname is probed from outside the cluster, not
+from inside it: PM-0008's action item and PM-0010's sharpest line, that an alert
+depending on the failing component is not an alert.
+
+**Security posture, dated rather than deferred.** Pod Security Standards at
+`restricted` per namespace and a default-deny NetworkPolicy per namespace, both
+from day one, because Cilium makes the second cheap and retrofitting either onto
+running applications is what makes people skip it. A limited RBAC user for daily
+work instead of `cluster-admin` before the first second-wave application, not
+before the first first-wave one: it is the largest remaining gap for claiming
+Kubernetes as a skill, and it is easier to scope correctly once something real
+is running.
+
+## Still open, and deliberately
+
+The LoadBalancer address pool, pending the router's DHCP range.
+
+Whether `/var/lib/etcd` eventually moves off the NVMe that Restic reads. The
+read cap makes this unnecessary today; it becomes a question again only if the
+cluster's own storage grows enough to matter.
 
 ## Answered: the zangetsu kernel, 2026-11-19
 
@@ -186,6 +306,71 @@ NetworkPolicy: default-deny per namespace from day one, or later.
 Pod Security Standards per namespace. Requests and limits, and whether
 `LimitRange` and `ResourceQuota` are set per namespace.
 
+## Step 5a: decommissioning the lab, before anything is built
+
+A node belongs to one cluster, because it has one kubelet. `kubeadm reset` on
+urahara is therefore a precondition of the build, not a tidy-up afterwards.
+
+**The order matters, and the reason is an alert storm.** The moment the lab is
+reset, `probe_success` for `app.lab.thalespm.me/healthz` goes to zero and the
+SLO burn rules fire against a cluster that was destroyed on purpose. The
+cleanup comes first, in its own commit, and only then does anything get reset.
+
+The second trap is already written in the rules file: Grafana does not delete a
+file-provisioned rule just because it disappeared from `groups:`. All fifteen
+need an entry under `deleteRules`, which is the lesson `caddy-backend-down`
+taught by surviving the removal of Caddy by months.
+
+**What the lab left inside this repository**
+
+- `docker/services/observability/metrics/grafana/provisioning/alerting/rules.yaml`:
+  fifteen rules labelled `shortname: K8SLAB` (`k8s-lab-apiserver-down`,
+  `-app-down`, `-control-plane-restart`, `-etcd-slow-fsync`, `-node-not-ready`,
+  `-crashloop`, `-calico-node-restart`, `-no-lb-announcement`,
+  `-cross-node-network`, `-binary-mismatch`, `-integrity-check-stale`,
+  `-cert-expiring`, `-pod-restarting`, `-slo-fast-burn`, `-slo-slow-burn`).
+  Removed from `groups:` and listed under `deleteRules`.
+- `docker/services/observability/metrics/grafana/provisioning/dashboards/k8s-lab-slo.json`.
+- `docker/services/observability/metrics/victoriametrics/prometheus.yml`: the
+  `app.lab.thalespm.me` target inside `blackbox-exporter`, and the whole
+  `blackbox-k8s-lab` job.
+- `scripts/setup/setup-uptime-kuma.py`: the `K8s lab app` monitor. Edit
+  `MONITORS` **and run the script**, which reconciles both ways; editing
+  without running is how Arcane, Caddy and Jellyfin survived as zombie monitors
+  for months.
+- `docker/services/platform/networking/pi-hole/pi-hole.yaml` and
+  `docker/hosts/urahara/pi-hole-network.yaml`: the
+  `FTLCONF_misc_dnsmasq_lines=address=/lab.thalespm.me/...` wildcard, in both
+  places, since the Pi-hole v6 API rejects that key and Nebula Sync cannot
+  propagate it.
+- `scripts/networking/k8s-pod-masquerade.sh` and
+  `scripts/systemd/k8s-pod-masquerade.service`, plus the paragraph in
+  `CONVENTIONS.md` that documents them.
+
+Nothing leaves the `include:` of either host, so the README inventory does not
+change.
+
+**On the hosts, after that commit is live**
+
+`kubeadm reset` on both nodes. On zangetsu, remove what existed only for the
+lab: the masquerade unit, the swap unit from PM-0004, the kubelet and
+Kubernetes packages, the sysctls and the binary-integrity timer the lab repo
+installed. zangetsu is not in the new cluster, so none of it has a second life.
+
+**What is not carried out of the cluster**
+
+Everything worth keeping is already in Git in the lab repository: the chart
+pattern, the Gateway and HTTPRoute manifests, the CloudNativePG manifests and
+the three probes. What exists only inside the running cluster is the hand-made
+secrets, the ACME account and `lab-pg`'s data, and all three are deliberately
+disposable. Confirm that rather than assume it, once, before the reset.
+
+**Why not keep the lab alive on zangetsu while building**
+
+Because zangetsu is the host that has to stay boring, and the lab's pain there
+is exactly what the ADR decided to leave behind: a kernel without BTF, a
+hand-written masquerade rule, and nftables colliding with Tailscale.
+
 ## Plan, in order
 
 1. ~~Raise the Grafana container's memory limit.~~ Done: 1g, after a 510 MiB
@@ -195,8 +380,8 @@ Pod Security Standards per namespace. Requests and limits, and whether
    and the new README.
 3. ~~Test Debian's arm64 kernel on zangetsu.~~ Answered above: it does not
    migrate and does not join the cluster.
-4. Write the platform ADR, knowing the answer to step 3.
-5. Tear down the lab cluster and build the new one.
+4. ~~Write the platform ADR, knowing the answer to step 3.~~ Done: above.
+5. Tear down the lab cluster (step 5a above) and build `seireitei`.
 6. First application.
 
 ## Carried over from the lab
