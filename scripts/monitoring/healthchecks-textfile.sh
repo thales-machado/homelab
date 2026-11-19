@@ -29,10 +29,23 @@ KEY=$(grep '^HEALTHCHECKS_API_KEY=' "$HOMELAB_ENV" | cut -d= -f2-)
 
 mkdir -p "$OUT_DIR"
 
+# curl -f would exit silently on any non-2xx and hand empty input to python,
+# which then dies on a JSON error that says nothing about the real cause.
+RAW="$OUT_DIR/.healthchecks.json"
+CODE=$(curl -sS --max-time 20 -o "$RAW" -w '%{http_code}' \
+  -H "X-Api-Key: $KEY" "$API/api/v3/checks/") || {
+  echo "cannot reach $API" >&2
+  exit 1
+}
+if [ "$CODE" != "200" ]; then
+  echo "Healthchecks answered HTTP $CODE:" >&2
+  head -c 300 "$RAW" >&2
+  exit 1
+fi
+
 # Written to a temporary file and renamed: node-exporter reads this file on its
 # own schedule and must never see it half written.
-curl -sf --max-time 20 -H "X-Api-Key: $KEY" "$API/api/v3/checks/" \
-  | python3 -c '
+python3 -c '
 import json, sys, time
 
 data = json.load(sys.stdin)
@@ -55,6 +68,7 @@ lines += [
     "",
 ]
 sys.stdout.write("\n".join(lines))
-' > "$OUT.tmp"
+' < "$RAW" > "$OUT.tmp"
 
 mv "$OUT.tmp" "$OUT"
+rm -f "$RAW"
