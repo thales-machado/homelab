@@ -209,7 +209,7 @@ Right: `VAULTWARDEN_DOMAIN`, `KOMODO_JWT_SECRET`, `KOMODO_PASSKEY`, `VAULTWARDEN
 
 ## Local and CI checks
 
-`pre-commit` (`.pre-commit-config.yaml`) runs gitleaks, yamllint (`.yamllint.yml`), shellcheck, JSON validation and whitespace fixes on every commit; `pre-commit install` once per clone. CI mirrors it: `.github/workflows/validate.yml` adds `docker compose config` for every host entry point against its `.env.example`, `python -m py_compile` and `terraform fmt -check`, and `.github/workflows/secrets.yml` runs gitleaks over the full history plus a weekly scheduled scan.
+`pre-commit` (`.pre-commit-config.yaml`) runs gitleaks, yamllint (`.yamllint.yml`), shellcheck, JSON validation and whitespace fixes on every commit; `pre-commit install` once per clone. CI mirrors it: `.github/workflows/ci.yaml` adds `docker compose config` for every host entry point against its `.env.example`, `python -m py_compile` and `terraform fmt -check`, and `.github/workflows/secrets.yml` runs gitleaks over the full history plus a weekly scheduled scan. The deploy lives in that same workflow and `needs:` the checks that decide what runs on a host (`yaml`, `compose`, `shell`, `python`), so broken YAML cannot reach the hosts while the checks are still running, which is what happened while the two were separate workflows racing the same push. `inventory` and `terraform fmt` do not gate it: a stale README table must not block an urgent fix.
 
 `yamllint` is deliberately set to catch only real errors (syntax, duplicate keys, bad anchors), never formatting.
 
@@ -350,7 +350,7 @@ A new service gets the socket directly only with a reason of the same kind, writ
 - New public service → DockFlare labels + `depends_on: dockflare`, and an explicit decision on `dockflare.access.group`.
 - New "both" service → all of the above, same container/port for DockFlare and Traefik.
 - **`include:` is the only source of truth for what runs.** It must match production exactly:
-  - A service that moved hosts or was decommissioned has its line **removed**, not commented out. History belongs in git; the deploy workflow (`.github/workflows/deploy.yaml`) reads `include:` and depends on it reflecting reality.
+  - A service that moved hosts or was decommissioned has its line **removed**, not commented out. History belongs in git, and `include:` is the only statement of what a host actually runs.
   - A commented line is allowed only for a real standby with a concrete, documented reason to reactivate.
   - A fragment with no line in any `include:` is legacy or under evaluation. It gets no `pihole-dns.yaml` entry until it has an `include:` line, and compliance checks (Watchtower labels, limits, `TZ`, backup, DNS, monitoring) run only on included fragments.
 

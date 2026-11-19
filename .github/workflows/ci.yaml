@@ -1,0 +1,144 @@
+# Validates every push and pull request, and deploys main to both hosts once
+# the checks that decide what runs there have passed.
+#
+# One file on purpose. Validation and deploy used to be two workflows started
+# by the same push, so they raced: the deploy took about three seconds and the
+# checks about a minute, which means broken YAML always reached the hosts
+# first and the checks only reported it afterwards. needs: makes the gate real.
+#
+# Only yaml, compose, shell and python gate the deploy. inventory and
+# terraform-fmt are repo hygiene (the README table, formatting) and cannot
+# break a host, so a stale table must not block an urgent fix.
+#
+# Deploy itself: homelab-urahara has its own webhook_secret (set on the
+# Stack); homelab-zangetsu leaves the field empty and falls back to the Core's
+# global KOMODO_WEBHOOK_SECRET, so each GitHub secret below must match
+# whichever the Stack actually uses. Both stacks use webhook_force_deploy:
+# true (see docs/komodo.md for the DeployStackIfChanged bug). "Force" there
+# means deploying without diffing first, not docker compose --force-recreate.
+#
+# No path filter and no per-host matching. A deploy makes Periphery pull into
+# /opt/homelab and run docker compose up -d, and Compose recreates only the
+# services whose config hash changed, so a push touching scripts/, docs or
+# this file recreates nothing at all. Confirmed on 2026-11-19, when a deploy
+# carrying a real nebula-sync.yaml change recreated zero of 39 containers,
+# because depends_on is not part of a container's config.
+#
+# Two earlier designs failed. Filtering by each host's include: list left
+# /opt/homelab at whatever commit last happened to match, and fixing that by
+# hand needs a git pull on the host, which fails with "unable to unlink old"
+# because Periphery writes those files as root. Routing non-compose changes to
+# /refresh instead does not help either: RefreshStackCache updates Komodo's
+# own clone, never the host's.
+name: ci
+
+on:
+  push:
+  pull_request:
+  # Redeploy without a push, for a host that drifted or a deploy that failed.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yaml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: pip install yamllint==1.38.0
+      - run: yamllint -c .yamllint.yml -f github .
+
+  compose:
+    runs-on: ubuntu-latest
+    env:
+      # Hosts run Compose v5: v2 rejects the host override files pulled in through include:.
+      COMPOSE_VERSION: v5.1.0
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Docker Compose ${{ env.COMPOSE_VERSION }}
+        run: |
+          curl -fsSL -o /usr/local/bin/compose \
+            "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64"
+          chmod +x /usr/local/bin/compose
+      - name: Render every host entry point
+        run: |
+          set -euo pipefail
+          for f in docker/hosts/*/compose.yaml docker/hosts/*/komodo-*.yaml; do
+            [ -f "$f" ] || continue
+            grep -q '^include:' "$f" || continue
+            dir=$(dirname "$f")
+            echo "::group::$f"
+            (cd "$dir" && HOMELAB_ENV="$PWD/.env.example" compose --env-file .env.example -f "$(basename "$f")" config -q)
+            echo "::endgroup::"
+          done
+
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: shellcheck
+        run: |
+          find scripts docker -name '*.sh' -print0 | xargs -0 shellcheck -S warning
+          shellcheck -S warning docker/services/media-player/sync/rclone/xdg-open
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: compile every script
+        run: find scripts -name '*.py' -print0 | xargs -0 python -m py_compile
+
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: README service table matches the host include lists
+        run: python scripts/inventory/inventory.py --check
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive terraform
+
+  deploy-zangetsu:
+    needs: [yaml, compose, shell, python]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Komodo deploy (homelab-zangetsu)
+        env:
+          KOMODO_WEBHOOK_SECRET: ${{ secrets.KOMODO_HOMELAB_ZANGETSU_WEBHOOK_SECRET }}
+        run: |
+          BODY='{"ref":"refs/heads/main","repository":{"full_name":"${{ github.repository }}"}}'
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$KOMODO_WEBHOOK_SECRET" | sed 's/^.* //')
+          curl -sf -X POST "https://komodo.thalespm.me/listener/github/stack/${{ vars.KOMODO_ZANGETSU_STACK_ID }}/deploy" \
+            -H "Content-Type: application/json" \
+            -H "X-Github-Event: push" \
+            -H "X-Hub-Signature-256: sha256=$SIG" \
+            --data-raw "$BODY"
+
+  deploy-urahara:
+    needs: [yaml, compose, shell, python]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Komodo deploy (homelab-urahara)
+        env:
+          KOMODO_WEBHOOK_SECRET: ${{ secrets.KOMODO_HOMELAB_URAHARA_WEBHOOK_SECRET }}
+        run: |
+          BODY='{"ref":"refs/heads/main","repository":{"full_name":"${{ github.repository }}"}}'
+          SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$KOMODO_WEBHOOK_SECRET" | sed 's/^.* //')
+          curl -sf -X POST "https://komodo.thalespm.me/listener/github/stack/${{ vars.KOMODO_URAHARA_STACK_ID }}/deploy" \
+            -H "Content-Type: application/json" \
+            -H "X-Github-Event: push" \
+            -H "X-Hub-Signature-256: sha256=$SIG" \
+            --data-raw "$BODY"
