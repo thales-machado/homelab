@@ -692,9 +692,6 @@ groups:
             shortname: UNIFI
             host: WAN
           isPaused: false
-        # Lab Kubernetes cluster (platform-engineering-labs, k8s/local), probed
-        # from here on purpose: an alert living inside that cluster dies with it.
-        # Its control plane was down 41h once and nothing noticed (PM-0006).
         - uid: healthchecks-check-down
           title: Healthchecks check is down
           condition: C

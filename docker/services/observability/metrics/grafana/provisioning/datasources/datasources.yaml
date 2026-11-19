@@ -16,16 +16,8 @@ datasources:
     uid: efswmxbcxua68c
     editable: false
 
-  # In-cluster Prometheus of the k8s lab. Alerting for that cluster lives here,
-  # outside it: an alert path that dies with the cluster never fires when it
-  # matters. Read-only through the lab Gateway, behind basic auth.
+# Grafana does not drop a provisioned datasource just because it left the list
+# above, the same trap as alert rules. Removed with the lab on 2026-11-19.
+deleteDatasources:
   - name: K8s Lab Prometheus
-    type: prometheus
-    access: proxy
-    url: https://prometheus.lab.thalespm.me
-    uid: k8slabprom001
-    editable: false
-    basicAuth: true
-    basicAuthUser: prometheus
-    secureJsonData:
-      basicAuthPassword: $__env{K8S_LAB_PROMETHEUS_PASSWORD}
+    orgId: 1

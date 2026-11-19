@@ -16,9 +16,9 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-      # Metrics written by scripts on the host, read on the next scrape. Used
-      # by the k8s lab integrity check (platform-engineering-labs, step 2.5),
-      # which must report even when the cluster itself is down.
+      # Metrics written by scripts on the host, read on the next scrape.
+      # Today: healthchecks-textfile.sh, which must report even when the
+      # thing it watches is down.
       - /var/lib/node-exporter/textfile:/textfile:ro
     command:
       - --path.procfs=/host/proc
