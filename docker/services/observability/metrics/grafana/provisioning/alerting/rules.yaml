@@ -1256,6 +1256,84 @@ groups:
             severity: warning
             shortname: K8SLAB
           isPaused: false
+        # Healthchecks notifies on the transition into down and never again, so
+        # a check that stays red sends one message and goes quiet: postgres-backup
+        # sat red for 71 days that way. These two rules turn that one-shot event
+        # into a state Grafana keeps re-evaluating.
+        - uid: healthchecks-check-down
+          title: Healthchecks check is down
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: hc_check_up{name!="wolf-image-check"}
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 15m
+          annotations:
+            summary: 'The Healthchecks check *{{ $labels.name }}* is down: the job behind it did not report in on schedule. wolf-image-check is excluded on purpose, because its failure means a new image digest on GHCR, not a broken job.'
+          labels:
+            severity: critical
+            shortname: HEALTHCHECKS
+          isPaused: false
+        - uid: healthchecks-metrics-stale
+          title: Healthchecks metrics are stale
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 3600
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: time() - hc_scrape_timestamp_seconds
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1800
+                        type: gt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 10m
+          annotations:
+            summary: 'The Healthchecks textfile metrics are more than 30 minutes old, against a timer that runs every 5. A textfile metric serves its last value forever, so without this rule every check above would keep reporting healthy while nothing was being read at all.'
+          labels:
+            severity: warning
+            shortname: HEALTHCHECKS
+          isPaused: false
 
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
