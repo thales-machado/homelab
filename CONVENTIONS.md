@@ -20,7 +20,7 @@ Other fixed addresses: `192.168.15.248` is the Pi-hole VIP (keepalived), `192.16
 
 - **Traefik label change** → `docker compose up -d --force-recreate <service>`. A change to the file provider (`docker/services/platform/networking/traefik/config/dynamic/`) hot-reloads, but that directory is **copied**, not bind-mounted from the repo: after `git pull`, run `bash scripts/setup/setup-traefik-config.sh` on zangetsu.
 - **Pi-hole DNS reload**: `docker compose exec pi-hole pihole reloaddns` (`restartdns reload` no longer exists in Pi-hole v6).
-- **Direct bind mount vs copy**: most services mount `./<folder>` from their own fragment, so `git pull` is enough. A few (`homepage`, `victoriametrics`) mount from `/opt/apps/`, outside the repo, and need their config copied there after `git pull` (today with the `homelab-cp` shell function on zangetsu, which is not versioned yet). Check the fragment's `volumes:` when unsure.
+- **Direct bind mount vs copy**: most services mount `./<folder>` from their own fragment, so `git pull` is enough. A few (`homepage`, `victoriametrics`) mount from `/opt/apps/`, outside the repo, and need their config copied there after `git pull`, with the `homelab-cp` function from `scripts/shell/homelab-functions.sh`. Check the fragment's `volumes:` when unsure.
 - **Single-file bind mounts** (e.g. `keepalived.conf`, the Komodo Periphery config): `git pull` or a setup script rewrites the file with a new inode, and the container keeps serving the old one. Always `docker compose up -d --force-recreate <service>`, never just `restart`. Whole-directory bind mounts are not affected.
 - **`--force-recreate <service>` also recreates that service's `depends_on`.** Confirmed on zangetsu: recreating `watchtower` took `docker-socket-proxy` with it, while the same command on urahara touched only `watchtower`, because the proxy was already up there. Add `--no-deps` when the intent is to recreate exactly one container, which is the case for a changed `.env` or a rewritten single-file mount.
 - **NAS mounts (CIFS)**: units versioned in `scripts/systemd/`, installed by `bash scripts/setup/setup-nas-mounts.sh` (needs sudo). A failed mount triggers `OnFailure=` → `scripts/networking/notify-mount-failure.sh`. A `docker.service` drop-in (`scripts/systemd/docker.service.d/nas-mounts-<host>.conf`, `RequiresMountsFor=`) makes Docker wait for the mounts, so no container starts on an empty bind mount when the NAS is down at boot.
@@ -226,7 +226,9 @@ scripts/
 ├── setup/        # config provisioning/rendering, run manually once or when the config changes
 ├── networking/   # DNS sync, VPN forwarding rules, mount failure notification
 ├── immich/       # Immich-specific utilities
+├── inventory/    # the service inventory that CI checks against README.md
 ├── monitoring/   # checks for things no Prometheus exporter covers
+├── shell/        # interactive helpers sourced from ~/.bashrc on the hosts
 └── systemd/      # real systemd units, referenced by scripts from several categories
 ```
 
