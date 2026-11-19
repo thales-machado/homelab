@@ -20,7 +20,9 @@ from socketio.exceptions import TimeoutError as SocketTimeout
 from uptime_kuma_api import UptimeKumaApi, MonitorType, NotificationType, DockerType
 
 # api.get_monitors() hangs forever in production (any lib version), so the
-# monitor list is read from SQLite (read-only). Mutations still use the API.
+# monitor list is read from SQLite (read-only). Mutations still use the API,
+# except that delete_monitor() validates the id by calling get_monitors()
+# itself: see prune_stale_monitors().
 KUMA_DB_PATH = os.getenv("UK_DB_PATH", "/app/data/kuma.db")
 
 # --- CONFIG (environment variables, with fallbacks) ---
@@ -295,12 +297,17 @@ def prune_stale_monitors(api):
     """Delete monitors that are no longer listed (never groups)."""
     current_names = {m[0] for m in MONITORS} | set(docker_monitor_names())
     existing = list_monitors_db()
+    # delete_monitor() checks the id against get_monitors() before deleting, so
+    # it inherits the hang and times out without deleting anything. Hand the
+    # library the SQLite listing instead; the delete itself is a plain emit and
+    # works. Found on 2026-11-19, removing the two lab monitors.
+    api.get_monitors = lambda: [{"id": m["id"]} for m in existing]
     pruned = 0
     for m in existing:
         if m.get("type") == "group":
             continue
         if m["name"] not in current_names:
-            api.delete_monitor(m["id"])
+            mutate(api.delete_monitor, m["id"])
             print(f"  🗑️  Orphan removed: {m['name']} (id={m['id']})")
             pruned += 1
     if pruned == 0:
