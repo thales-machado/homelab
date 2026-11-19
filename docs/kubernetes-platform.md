@@ -117,36 +117,64 @@ migrated application gets a specific record pointing at the MetalLB address.
 Migration is one DNS line, rollback is deleting it. For public access,
 `cloudflared` stays in Docker and its tunnel points at the cluster address.
 
-**Load balancer.** MetalLB in L2 mode. BGP needs a router that speaks it,
-Cilium L2 announcements need kube-proxy replacement, and kube-vip does the
-same job with fewer users. Revisit if the kernel question below is answered
-yes.
+**Load balancer.** MetalLB in L2 mode. BGP needs a router that speaks it and
+kube-vip does the same job with fewer users. The reason to rule out Cilium L2
+announcements was that they need kube-proxy replacement, which needs BTF,
+which zangetsu does not have. With zangetsu out of the cluster that reason is
+gone, so this is open again rather than decided: see the kernel answer below.
 
 **Namespaces.** One per application. The namespace is the unit of RBAC, quota,
 NetworkPolicy and deletion, so `kubectl delete ns <app>` uninstalls cleanly.
 Category lives as a label and as a folder, which is where it is useful.
 
-**Scheduling.** urahara carries the load: 28 GiB against 7.9 GiB, and NVMe.
-zangetsu joins as a light redundancy node. Freeing memory there is not the
-answer; not scheduling onto it is.
+**Scheduling, and a single control plane.** The cluster runs on urahara alone:
+28 GiB against 7.9 GiB, and NVMe. zangetsu does not join it. The kernel answer
+below is what settled that, and it agrees with the bootstrap rule anyway,
+since what zangetsu carries is exactly what has to outlive a cluster outage.
+A second node would not have bought availability either: two etcd members are
+worse than one, because a two-member cluster loses quorum when either fails.
 
 ## Open decisions
 
 **Blocking the build**
 
-The zangetsu kernel. The Raspberry Pi vendor kernel ships no BTF, which is why
-the lab could not use kube-proxy replacement (PM-0012), `bpf.masquerade`
-(PM-0009) or Cilium L2 announcements. Debian's own arm64 kernel has BTF.
-Answering this changes the design of the new cluster, so it is tested before
-the platform decisions are finalised, with its own runbook and a rollback that
-keeps the current kernel selectable.
-
 Install method and version. kubeadm again keeps the alignment with the CKA.
 
-Single control plane on urahara. Two etcd members are worse than one: a
-two-member cluster loses quorum when either one fails.
-
 Pod and Service CIDRs, and the cluster name.
+
+Load balancer, reopened: MetalLB or Cilium L2 announcements, now that every
+node in the cluster has BTF.
+
+## Answered: the zangetsu kernel, 2026-11-19
+
+The Raspberry Pi vendor kernel ships no BTF, which is why the lab could not
+use kube-proxy replacement (PM-0012), `bpf.masquerade` (PM-0009) or Cilium L2
+announcements. Debian's own arm64 kernel has BTF, so the question was whether
+zangetsu could run it. **It does not migrate, and it does not join the
+cluster.**
+
+The package installs. It cannot be booted without maintaining a boot path by
+hand: `/etc/kernel/postinst.d/z50-raspi-firmware` refuses it with
+`WARNING: Unsupported kernel version (7.2.12+deb13-arm64) - skipping setup`,
+so nothing reaches `/boot/firmware`, and `initramfs-tools` says the same.
+Pointing `config.txt` at a hand-copied `vmlinuz` works once and then fails
+quietly: the next kernel update refreshes `/lib/modules` and leaves the boot
+image behind, so the machine reboots into an old kernel with new modules.
+
+That is the shape of the `.automount` mistake, on the host that carries DNS,
+the reverse proxy, the deploy agent and the alert path. The cost is not the
+first boot, it is the trap left armed for the update after it.
+
+Two more facts weigh the same way. Pure Debian does not support the Pi 5 on
+stable: the Debian images for Raspberry Pi state that the Pi 5 needs testing
+or unstable. And the 7.2 kernel tested here came from `trixie-backports`,
+which follows testing and would change versions every few months on the one
+host that has to be boring.
+
+urahara already has BTF, so a single-node cluster there gets the eBPF features
+without any of this. The experiment cost nothing: the vendor kernel was never
+replaced, the packages were purged, and the host stayed on
+`6.18.60+rpt-rpi-2712` throughout.
 
 **Not blocking, decided with a date in the platform ADR**
 
@@ -158,16 +186,15 @@ NetworkPolicy: default-deny per namespace from day one, or later.
 Pod Security Standards per namespace. Requests and limits, and whether
 `LimitRange` and `ResourceQuota` are set per namespace.
 
-How zangetsu is kept light: a taint with explicit tolerations, which is
-honest, or affinity, which is less friction.
-
 ## Plan, in order
 
-1. Raise the Grafana container's memory limit. It sits at 414 MiB of 512.
-2. Repository reorganisation, in three separate patches: the move with every
-   path corrected, the inventory script plus its CI job, and the new README.
-   Separate so that a broken deploy points at one of the three.
-3. Test Debian's arm64 kernel on zangetsu. Own runbook, own rollback.
+1. ~~Raise the Grafana container's memory limit.~~ Done: 1g, after a 510 MiB
+   peak against a 512 MiB ceiling.
+2. ~~Repository reorganisation, in three separate patches.~~ Done: the move
+   with every path corrected, the inventory script plus its hook and CI job,
+   and the new README.
+3. ~~Test Debian's arm64 kernel on zangetsu.~~ Answered above: it does not
+   migrate and does not join the cluster.
 4. Write the platform ADR, knowing the answer to step 3.
 5. Tear down the lab cluster and build the new one.
 6. First application.
