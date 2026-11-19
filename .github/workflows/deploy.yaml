@@ -15,12 +15,10 @@
 # included by both hosts triggers both; a host-exclusive fragment triggers
 # only that host.
 #
-# Two executions, not one. A deploy with webhook_force_deploy recreates every
-# container on the host, Pi-hole included, so the LAN loses DNS for a few
-# seconds on every push. Files under scripts/ and terraform/ need to exist in
-# /opt/homelab but no container has to be recreated for them, so they get
-# /refresh (RefreshStackCache: clone and diff only). Anything that changes a
-# compose fragment still gets /deploy.
+# Two executions, not one. Files under scripts/ and terraform/ have to exist in
+# /opt/homelab, but no container is built from them, so they get /refresh
+# (RefreshStackCache: clone and diff only) instead of a deploy that walks the
+# whole stack. Anything that changes a compose fragment still gets /deploy.
 name: Deploy Homelab
 
 on:
