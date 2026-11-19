@@ -3,8 +3,15 @@ services:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
     restart: unless-stopped
-    cpus: 0.50
-    mem_limit: 256m
+    # 1.00 and 512m, measured on 2026-11-19 with 82 monitors on the RPi 5:
+    # memory.events counted 97110 hits against the 256 MiB ceiling, with
+    # memory.current parked at 98.9% of it. Never OOM-killed, because the
+    # kernel reclaims instead, and that reclaim storm is what made the
+    # monitor-list socket event never complete, the UI render an empty
+    # dashboard and a single DELETE take 2.2s. cpu.stat showed 231 throttled
+    # periods out of 3445, part of it spent reclaiming.
+    cpus: 1.00
+    mem_limit: 512m
     pids_limit: 64
     volumes:
       - /opt/apps/uptime-kuma:/app/data
