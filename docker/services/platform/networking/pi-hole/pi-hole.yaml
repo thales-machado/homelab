@@ -43,7 +43,6 @@ services:
       - FTLCONF_webserver_api_password=${ADMIN_PASSWORD}
       # Wildcards need a raw dnsmasq line; Local DNS records cannot do them.
       # Must be repeated in the replica override (see CONVENTIONS.md).
-      - FTLCONF_misc_dnsmasq_lines=address=/lab.thalespm.me/192.168.15.241
     networks:
       cloudflare-net:
         ipv4_address: ${PIHOLE_STATIC_IP:-172.22.0.240}

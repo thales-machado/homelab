@@ -2,13 +2,9 @@
 # PIHOLE_STATIC_IP in .env (Compose does not merge a nested ipv4_address across
 # included files). Publishes port 80 on the LAN so Nebula Sync (zangetsu) can
 # reach the API. app_sudo is required by Nebula Sync on replicas.
-# misc.dnsmasq_lines (*.lab.thalespm.me wildcard) must be set here too: the
-# Pi-hole v6 API rejects that key (400), so Nebula Sync cannot propagate it and
-# its FULL_SYNC would abort before RUN_GRAVITY.
 services:
   pi-hole:
     ports:
       - "192.168.15.215:80:80"
     environment:
       - FTLCONF_webserver_api_app_sudo=true
-      - FTLCONF_misc_dnsmasq_lines=address=/lab.thalespm.me/192.168.15.241

@@ -40,3 +40,7 @@ tfplan
 *.iml
 
 **/path/
+
+# Python bytecode, created by any local run or py_compile of scripts/
+__pycache__/
+*.pyc
