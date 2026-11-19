@@ -3,16 +3,8 @@ services:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
     restart: unless-stopped
-    # 1.00 and 512m since 2026-11-19. 256 MiB was genuinely tight (170 MiB of
-    # anonymous memory at rest) but it was not the cause of the stall, and
-    # memory.events hitting the ceiling 97110 times was mostly page cache
-    # being reclaimed, not starvation: docker stats subtracts inactive_file,
-    # memory.current does not. The real cause was the database. 1.x computes
-    # uptime straight from the heartbeat table, so every monitor-list emit ran
-    # 82 aggregates over 6.6M rows in a 963 MB file and never finished inside
-    # the socket timeout: the dashboard rendered empty and the setup script
-    # timed out on every list call. Retention is what keeps that bounded; these
-    # limits only buy page cache for it.
+    # 1.x computes uptime from the raw heartbeat table, so a big database
+    # stalls every monitor-list emit. See CONVENTIONS.md, Observability.
     cpus: 1.00
     mem_limit: 512m
     pids_limit: 64
