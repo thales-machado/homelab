@@ -8,8 +8,8 @@ Read all of `docs/komodo.md` before acting.
 Non-negotiable rule: `komodo-core` and `komodo-periphery` **never** go in the `include:` of any host's main `compose.yaml`, because that takes down the very deploy that manages them. Deploying or updating those two is always manual:
 
 ```bash
-cd hosts/<host> && docker compose -f komodo-periphery.yaml up -d
-cd hosts/zangetsu && docker compose -f komodo-core.yaml up -d
+cd docker/hosts/<host> && docker compose -f komodo-periphery.yaml up -d
+cd docker/hosts/zangetsu && docker compose -f komodo-core.yaml up -d
 ```
 
 Other points:

@@ -5,7 +5,7 @@
 # script uses absolute local paths (/opt/apps/...) and only works for apps on
 # the SAME host as Dagu (zangetsu). SQLite apps on urahara (e.g. Home
 # Assistant) must run via ssh.run + a remote docker run on urahara itself
-# (see infra/automation/dagu/dags/sqlite-backup-urahara.yaml, same
+# (see docker/services/automation/dagu/dags/sqlite-backup-urahara.yaml, same
 # cross-host pattern as restic-backup-urahara.yaml).
 #
 # Run by the Dagu DAG sqlite-backup-urahara, before Restic.

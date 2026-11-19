@@ -40,7 +40,7 @@ flowchart LR
 
 Other fixed addresses: `192.168.15.248` is the Pi-hole VIP (keepalived), `192.168.15.200` the NAS, `192.168.15.250` the UniFi controller, and `192.168.15.220` a separate machine outside this repo.
 
-Each host has a `hosts/<host>/compose.yaml` whose `include:` list is the single source of truth for what runs there. A service is a self-contained fragment in `infra/<category>/<service>/`; if it is not included, it is not running.
+Each host has a `docker/hosts/<host>/compose.yaml` whose `include:` list is the single source of truth for what runs there. A service is a self-contained fragment in `docker/services/<category>/<service>/`; if it is not included, it is not running.
 
 ## Deploy pipeline
 
@@ -53,20 +53,20 @@ flowchart LR
     ku --> su[redeploy urahara stack]
 ```
 
-[`deploy.yaml`](.github/workflows/deploy.yaml) parses each host's `include:` list and only triggers the stacks whose fragments changed. A fragment used by both hosts, such as an exporter, redeploys both. Pi-hole DNS records live in [`pihole-dns.yaml`](infra/platform/networking/pi-hole/config/pihole-dns.yaml) and are synced by a signed webhook on change. Renovate keeps image tags current.
+[`deploy.yaml`](.github/workflows/deploy.yaml) parses each host's `include:` list and only triggers the stacks whose fragments changed. A fragment used by both hosts, such as an exporter, redeploys both. Pi-hole DNS records live in [`pihole-dns.yaml`](docker/services/platform/networking/pi-hole/config/pihole-dns.yaml) and are synced by a signed webhook on change. Renovate keeps image tags current.
 
 ## Observability
 
 - **Metrics:** VictoriaMetrics (Prometheus-compatible) scraping node-exporter, cAdvisor, blackbox-exporter, smartctl, Postgres, Redis, UniFi (unpoller), qBittorrent, Traefik, CrowdSec, rclone and Watchtower.
 - **Logs:** Grafana Alloy ships container and host logs to Loki.
-- **Dashboards and alerting:** 11 Grafana dashboards and alert rules provisioned from files in [`grafana/provisioning`](infra/observability/metrics/grafana/provisioning), so a fresh Grafana comes up fully configured.
+- **Dashboards and alerting:** 11 Grafana dashboards and alert rules provisioned from files in [`grafana/provisioning`](docker/services/observability/metrics/grafana/provisioning), so a fresh Grafana comes up fully configured.
 - **Uptime and disks:** Uptime Kuma, Scrutiny for S.M.A.R.T., Dozzle with an agent per host for live container logs.
 
 ## Backup
 
 - **Restic** snapshots `/opt` and `/etc` on both hosts to a dedicated NAS share, with GFS retention (7 daily, 4 weekly, 6 monthly).
 - **Databases** get a consistent dump first (`sqlite3 .backup`, `pg_dump`) so no backup depends on copying live files.
-- **Dagu** orchestrates the 10 scheduled jobs in [`dags/`](infra/automation/dagu/dags), and every job pings **Healthchecks**. The checks themselves are managed with Terraform in [`terraform/healthchecks`](terraform/healthchecks), with state on Cloudflare R2.
+- **Dagu** orchestrates the 10 scheduled jobs in [`dags/`](docker/services/automation/dagu/dags), and every job pings **Healthchecks**. The checks themselves are managed with Terraform in [`terraform/healthchecks`](terraform/healthchecks), with state on Cloudflare R2.
 - **NAS mounts** are fixed systemd `.mount` units with `OnFailure=` notifications, and Docker waits for them with `RequiresMountsFor=`, so containers never start writing to an empty mount point.
 
 ## Services
@@ -85,7 +85,7 @@ flowchart LR
 
 - Resource limits on every container (`cpus`, `mem_limit`, `pids_limit`).
 - Bind mounts under `/opt/apps/<service>/`, never named volumes, so Restic sees everything.
-- Secrets only through `env_file: .env`, named `<SERVICE>_<PURPOSE>`; see each host's [`.env.example`](hosts/zangetsu/.env.example).
+- Secrets only through `env_file: .env`, named `<SERVICE>_<PURPOSE>`; see each host's [`.env.example`](docker/hosts/zangetsu/.env.example).
 - Networks declared only in the host `compose.yaml`; fragments only reference them.
 - Services reach the Docker API through a socket proxy by default; the few that mount the socket directly are listed, with reasons, in `CONVENTIONS.md`.
 
@@ -94,8 +94,8 @@ The full set of rules, and the incidents behind them, is in [`CONVENTIONS.md`](C
 ## Layout
 
 ```text
-hosts/<host>/compose.yaml    entry point per host: include: list + host overrides
-infra/<category>/<service>/  one self-contained Compose fragment per service
+docker/hosts/<host>/compose.yaml    entry point per host: include: list + host overrides
+docker/services/<category>/<service>/  one self-contained Compose fragment per service
 scripts/                     setup, backup, networking and systemd units
 terraform/healthchecks/      Healthchecks.io checks as code
 .github/workflows/           validation and secret scanning, path-aware deploy, DNS sync

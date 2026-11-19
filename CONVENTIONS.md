@@ -6,19 +6,19 @@ This file holds the conventions this repository follows and the reasons behind t
 
 | Host | Hardware | LAN IP | Path | Role |
 |---|---|---|---|---|
-| `zangetsu` | Raspberry Pi 5 | `192.168.15.214` | `hosts/zangetsu/` | Platform core: Traefik, DockFlare master, primary Pi-hole, observability, Dagu, Komodo Core |
-| `urahara` | GMKtec K8 (Ryzen 7 8845HS) | `192.168.15.215` | `hosts/urahara/` | Content and media: Immich, Paperless, n8n, Home Assistant, Wolf, replica Pi-hole |
+| `zangetsu` | Raspberry Pi 5 | `192.168.15.214` | `docker/hosts/zangetsu/` | Platform core: Traefik, DockFlare master, primary Pi-hole, observability, Dagu, Komodo Core |
+| `urahara` | GMKtec K8 (Ryzen 7 8845HS) | `192.168.15.215` | `docker/hosts/urahara/` | Content and media: Immich, Paperless, n8n, Home Assistant, Wolf, replica Pi-hole |
 
 Other fixed addresses: `192.168.15.248` is the Pi-hole VIP (keepalived), `192.168.15.200` the NAS.
 
-- Each host's entry point is `hosts/<host>/compose.yaml`, whose `include:` list points to fragments in `infra/`. Run Compose commands from inside `hosts/<host>/`.
-- The repo is checked out at `/opt/homelab` on each host. Each host's real `.env` lives at `/opt/homelab/hosts/<host>/.env` and is never committed (see `hosts/<host>/.env.example`).
+- Each host's entry point is `docker/hosts/<host>/compose.yaml`, whose `include:` list points to fragments in `docker/services/`. Run Compose commands from inside `docker/hosts/<host>/`.
+- The repo is checked out at `/opt/homelab` on each host. Each host's real `.env` lives at `/opt/homelab/docker/hosts/<host>/.env` and is never committed (see `docker/hosts/<host>/.env.example`).
 - Both hosts are reached over SSH as `keydrop` (`ssh keydrop@<ip>`), for anything that needs the real host (`systemctl`, `docker exec`, editing the real `.env`).
 - When adding a host, register it in this table.
 
 ### Host operations
 
-- **Traefik label change** → `docker compose up -d --force-recreate <service>`. A change to the file provider (`infra/platform/networking/traefik/config/dynamic/`) hot-reloads, but that directory is **copied**, not bind-mounted from the repo: after `git pull`, run `bash scripts/setup/setup-traefik-config.sh` on zangetsu.
+- **Traefik label change** → `docker compose up -d --force-recreate <service>`. A change to the file provider (`docker/services/platform/networking/traefik/config/dynamic/`) hot-reloads, but that directory is **copied**, not bind-mounted from the repo: after `git pull`, run `bash scripts/setup/setup-traefik-config.sh` on zangetsu.
 - **Pi-hole DNS reload**: `docker compose exec pi-hole pihole reloaddns` (`restartdns reload` no longer exists in Pi-hole v6).
 - **Direct bind mount vs copy**: most services mount `./<folder>` from their own fragment, so `git pull` is enough. A few (`homepage`, `victoriametrics`) mount from `/opt/apps/`, outside the repo, and need their config copied there after `git pull` (today with the `homelab-cp` shell function on zangetsu, which is not versioned yet). Check the fragment's `volumes:` when unsure.
 - **Single-file bind mounts** (e.g. `keepalived.conf`, the Komodo Periphery config): `git pull` or a setup script rewrites the file with a new inode, and the container keeps serving the old one. Always `docker compose up -d --force-recreate <service>`, never just `restart`. Whole-directory bind mounts are not affected.
@@ -47,32 +47,32 @@ Traefik, VictoriaMetrics, postgres-exporter, Dozzle and Nebula Sync run only on 
 
 - The urahara service publishes its port **bound to urahara's LAN IP only**, e.g. `"192.168.15.215:7007:7007"`, never `0.0.0.0`.
 - The consumer on zangetsu targets `192.168.15.215:<port>` instead of a container name.
-- Private HTTP routing does not use Traefik labels (Traefik only discovers containers on its own host). Add a router + service pointing to `http://<host-ip>:<port>` in `infra/platform/networking/traefik/config/dynamic/cross-host.yml`, and point the `pihole-dns.yaml` entry to the real host IP.
-- If the fragment is host-agnostic (included on more than one host), never put `ports:` in it. Add a small override in `hosts/<host>/`, included after the fragment, containing only that host's `ports:` (examples: `hosts/urahara/observability-ports.yaml`, `hosts/urahara/pi-hole-network.yaml`).
+- Private HTTP routing does not use Traefik labels (Traefik only discovers containers on its own host). Add a router + service pointing to `http://<host-ip>:<port>` in `docker/services/platform/networking/traefik/config/dynamic/cross-host.yml`, and point the `pihole-dns.yaml` entry to the real host IP.
+- If the fragment is host-agnostic (included on more than one host), never put `ports:` in it. Add a small override in `docker/hosts/<host>/`, included after the fragment, containing only that host's `ports:` (examples: `docker/hosts/urahara/observability-ports.yaml`, `docker/hosts/urahara/pi-hole-network.yaml`).
 - An `include:` override merges lists (`ports:`, `environment:`) but **not** nested maps such as `networks: <net>: ipv4_address:`; the base value always wins. For a per-host static IP use `${VAR:-default}` in the base fragment and set the variable in that host's `.env` (see `PIHOLE_STATIC_IP`).
 
 The same pattern covers HTTP routing, metrics scraping, Postgres access and agent connections.
 
 ## DNS (Pi-hole)
 
-Records are versioned in `infra/platform/networking/pi-hole/config/pihole-dns.yaml` and applied by `scripts/networking/sync-pihole-dns.sh`, or by GitHub Actions on commit (`.github/workflows/sync-pihole-dns.yaml`). Every new private service adds a `domain`/`ip` entry there. Ordering rules: see [Ordering rules](#ordering-rules).
+Records are versioned in `docker/services/platform/networking/pi-hole/config/pihole-dns.yaml` and applied by `scripts/networking/sync-pihole-dns.sh`, or by GitHub Actions on commit (`.github/workflows/sync-pihole-dns.yaml`). Every new private service adds a `domain`/`ip` entry there. Ordering rules: see [Ordering rules](#ordering-rules).
 
-A **wildcard** cannot go in that file: Pi-hole's Local DNS records do not support one, only a raw dnsmasq line (`FTLCONF_misc_dnsmasq_lines=address=/<domain>/<ip>` in `pi-hole.yaml`). It also has to be repeated in the replica's override (`hosts/urahara/pi-hole-network.yaml`), because the Pi-hole v6 API rejects that key with a 400 and Nebula Sync cannot propagate it: left out, its `FULL_SYNC` aborts before `RUN_GRAVITY`. `*.lab.thalespm.me` (the k8s lab) is the only wildcard today, and it is a lab reached through the homelab's DNS, not a homelab service.
+A **wildcard** cannot go in that file: Pi-hole's Local DNS records do not support one, only a raw dnsmasq line (`FTLCONF_misc_dnsmasq_lines=address=/<domain>/<ip>` in `pi-hole.yaml`). It also has to be repeated in the replica's override (`docker/hosts/urahara/pi-hole-network.yaml`), because the Pi-hole v6 API rejects that key with a 400 and Nebula Sync cannot propagate it: left out, its `FULL_SYNC` aborts before `RUN_GRAVITY`. `*.lab.thalespm.me` (the k8s lab) is the only wildcard today, and it is a lab reached through the homelab's DNS, not a homelab service.
 
 ## Homepage
 
-Configured through files in `infra/utilities/homepage/config/`; it does **not** use Docker labels.
+Configured through files in `docker/services/utilities/homepage/config/`; it does **not** use Docker labels.
 
 - A service with a UI gets an entry in `services.yaml` in the right group. Services with no useful UI (databases, Redis, exporters) are not added.
 - `docker.yaml` has one block per host, each through that host's `docker-socket-proxy:2375`.
 - Widget credentials: every variable Homepage consumes is named `HOMEPAGE_VAR_<SERVICE>_<FUNCTION>`, declared in `homepage.yaml`'s `environment:` and mapped from the `.env` variable (which follows the normal naming, without the prefix). The `HOMEPAGE_VAR_` prefix never appears in `.env`.
 - API tokens for app widgets can only be generated after that app's initial onboarding; until then the variable stays empty in `.env`.
 
-## infra/ structure
+## docker/services/ structure
 
 `platform/` · `observability/` · `automation/` · `content/` · `finance/` · `media-player/` · `integration/` · `smart-home/` · `utilities/`
 
-Each fragment `infra/<category>/<service>/<service>.yaml` is self-contained.
+Each fragment `docker/services/<category>/<service>/<service>.yaml` is self-contained.
 
 ## Storage convention
 
@@ -107,8 +107,8 @@ Metrics: VictoriaMetrics (Prometheus-compatible, viewed through Grafana). Logs: 
      sh -c "pip install -q uptime-kuma-api && python3 /s/setup-uptime-kuma.py"
    ```
    Every monitor needs the `WhatsApp - Homelab Notify` notification. Its "default" flag only applies in the UI, so a monitor created through the API without `notificationIDList` never alerts (20 of 41 monitors were silent). The script reconciles this on every run. The script reads the monitor list from SQLite because the `uptime-kuma-api` monitor-list event hangs indefinitely; mutations still go through the API.
-2. `infra/observability/metrics/victoriametrics/prometheus.yml`: add the scrape job if the service exposes metrics (Postgres: multi-target pattern above).
-3. `infra/observability/metrics/grafana/provisioning/alerting/rules.yaml`: grep for the old container name before removing a service and fix any rule that depends on it.
+2. `docker/services/observability/metrics/victoriametrics/prometheus.yml`: add the scrape job if the service exposes metrics (Postgres: multi-target pattern above).
+3. `docker/services/observability/metrics/grafana/provisioning/alerting/rules.yaml`: grep for the old container name before removing a service and fix any rule that depends on it.
 4. Critical scheduled jobs (backup, sync) get a Healthchecks check (`terraform/healthchecks/`, see `docs/backup.md`).
 5. Rerun the whole checklist after any large migration (reverse proxy, Docker manager, etc.); those are what historically left the gaps.
 
@@ -137,7 +137,7 @@ Needed for Traefik labels, DockFlare labels and Homepage widgets. Find it in thi
 
 ## Ordering rules
 
-`pihole-dns.yaml` is organized by category banners mirroring `infra/` (e.g. `# --- Content ---`):
+`pihole-dns.yaml` is organized by category banners mirroring `docker/services/` (e.g. `# --- Content ---`):
 
 - Banners and the header at the top of the file are protected: never remove or reorder them.
 - Within a category, entries are in alphabetical order by domain.
@@ -162,9 +162,9 @@ Raise them only with a documented reason in a comment (e.g. Wolf's `pids_limit`,
 
 **Secrets**: via `env_file: - ${HOMELAB_ENV}`. Never hardcoded.
 
-- `HOMELAB_ENV` is set per host in `/etc/environment` and points to `/opt/homelab/hosts/<host>/.env`.
-- Each `hosts/<host>/` also needs a physical `.env` in the folder: Compose interpolates `${VAR}` in YAML from the working directory's `.env`, a mechanism separate from `env_file:`. `include:` resolves relative paths against the fragment, which is why a `.env` in `infra/` would not work.
-- Scripts shared between hosts read `$HOMELAB_ENV`; never hardcode `hosts/<host>/.env` in them. Scripts/DAGs that only make sense on one host may hardcode that host.
+- `HOMELAB_ENV` is set per host in `/etc/environment` and points to `/opt/homelab/docker/hosts/<host>/.env`.
+- Each `docker/hosts/<host>/` also needs a physical `.env` in the folder: Compose interpolates `${VAR}` in YAML from the working directory's `.env`, a mechanism separate from `env_file:`. `include:` resolves relative paths against the fragment, which is why a `.env` in `docker/services/` would not work.
+- Scripts shared between hosts read `$HOMELAB_ENV`; never hardcode `docker/hosts/<host>/.env` in them. Scripts/DAGs that only make sense on one host may hardcode that host.
 - Every variable belongs to a `# --- <Service> ---` section of each host's `.env.example`, never appended loose at the end nor dropped into an unrelated section. A variable for an existing service goes inside that service's section; a new service gets a new section at the end of the file. The same holds for the real `.env` on each host.
 - systemd units that call these scripts need `EnvironmentFile=/etc/environment`; systemd does not inherit it the way login sessions do.
 
@@ -232,7 +232,7 @@ scripts/
 
 **A script started by a systemd unit must be committed executable.** The units use `ExecStart=/opt/homelab/scripts/<folder>/<script>`, and systemd cannot exec a file without the bit: it fails with `status=203/EXEC`. Found on 2026-11-18 with `tailscale-forward.service`, which had been failing every five minutes since the zangetsu reboot of 2026-11-16, leaving the `DOCKER-USER` ACCEPT rules unapplied and the subnet router silently dropping traffic to other LAN hosts. The six `notify-*-mount-failure.service` units had the same defect, which would have silenced exactly the alert they exist to send.
 
-A backup script for a new app goes in `backup/`, not a new folder. Create a subfolder only for genuinely distinct functionality. When a script moves, update every reference to it, including `command:` in Dagu DAGs (`infra/automation/dagu/dags/`) and `ExecStart=` in `scripts/systemd/` units, which use absolute paths (`/opt/homelab/scripts/<folder>/<script>`).
+A backup script for a new app goes in `backup/`, not a new folder. Create a subfolder only for genuinely distinct functionality. When a script moves, update every reference to it, including `command:` in Dagu DAGs (`docker/services/automation/dagu/dags/`) and `ExecStart=` in `scripts/systemd/` units, which use absolute paths (`/opt/homelab/scripts/<folder>/<script>`).
 
 ## Service templates
 
@@ -244,7 +244,7 @@ A backup script for a new app goes in `backup/`, not a new folder. Create a subf
 
 Full skeletons (private/public/both/webhook) live in `.claude/commands/new-service.md`, the `/new-service` command.
 
-Common base: resource limits, `TZ=${TZ}`, `env_file: ${HOMELAB_ENV}` if it uses secrets, bind mount under `/opt/apps/<name>/`, only a reference to `cloudflare-net`. Fragment path: `infra/<category>/<name>/<name>.yaml`; exporters go in `infra/observability/metrics/exporters/<name>/` and get a scrape job, with no Traefik, DNS, DockFlare or Homepage entry.
+Common base: resource limits, `TZ=${TZ}`, `env_file: ${HOMELAB_ENV}` if it uses secrets, bind mount under `/opt/apps/<name>/`, only a reference to `cloudflare-net`. Fragment path: `docker/services/<category>/<name>/<name>.yaml`; exporters go in `docker/services/observability/metrics/exporters/<name>/` and get a scrape job, with no Traefik, DNS, DockFlare or Homepage entry.
 
 Private service on zangetsu:
 
@@ -353,13 +353,13 @@ A new service gets the socket directly only with a reason of the same kind, writ
 
 ## Komodo deployment
 
-Komodo Core runs only on zangetsu (`infra/platform/management/komodo/komodo.yaml`); Periphery runs on every host (`periphery.yaml`). GitHub Actions calls each host's Stack webhook only when the push touches that host's `include:`. Full details: `docs/komodo.md`.
+Komodo Core runs only on zangetsu (`docker/services/platform/management/komodo/komodo.yaml`); Periphery runs on every host (`periphery.yaml`). GitHub Actions calls each host's Stack webhook only when the push touches that host's `include:`. Full details: `docs/komodo.md`.
 
-- A deploy that recreates Core or Periphery kills the process running the deploy (containers left in `Created`, Stack stuck in `DOWN`). Removing them from `include:` is not enough, because Komodo works at the Compose **project** level. So `hosts/<host>/komodo-periphery.yaml` and `hosts/zangetsu/komodo-core.yaml` are **separate Compose projects** (`name: komodo-periphery` / `name: komodo-core`, `cloudflare-net` as `external: true`), always deployed manually:
+- A deploy that recreates Core or Periphery kills the process running the deploy (containers left in `Created`, Stack stuck in `DOWN`). Removing them from `include:` is not enough, because Komodo works at the Compose **project** level. So `docker/hosts/<host>/komodo-periphery.yaml` and `docker/hosts/zangetsu/komodo-core.yaml` are **separate Compose projects** (`name: komodo-periphery` / `name: komodo-core`, `cloudflare-net` as `external: true`), always deployed manually:
 
   ```bash
-  cd hosts/<host> && docker compose -f komodo-periphery.yaml up -d
-  cd hosts/zangetsu && docker compose -f komodo-core.yaml up -d
+  cd docker/hosts/<host> && docker compose -f komodo-periphery.yaml up -d
+  cd docker/hosts/zangetsu && docker compose -f komodo-core.yaml up -d
   ```
 
   Because Periphery is its own project, Watchtower can recreate it without colliding with a Komodo deploy in progress.

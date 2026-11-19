@@ -4,7 +4,7 @@
 #   with a __VRRP_PASS__ placeholder; never commit the real password. This
 #   script replaces the placeholder with the .env value and writes the result
 #   to /opt/apps/keepalived/keepalived.conf, which the container
-#   (network_mode: host, infra/platform/networking/keepalived/keepalived.yaml)
+#   (network_mode: host, docker/services/platform/networking/keepalived/keepalived.yaml)
 #   mounts read-only.
 # Rerun whenever the VRRP password or the versioned config changes, then run
 # `docker compose up -d --force-recreate keepalived` (single-file bind mount:
@@ -15,7 +15,7 @@ REPO_DIR="/opt/homelab"
 ENV_FILE="${HOMELAB_ENV:?HOMELAB_ENV is not set}"
 # the OS hostname can differ from the name used in the repo (e.g. zangetsu
 # is "lemon-pi5" in the OS), so derive it from the HOMELAB_ENV path
-# (hosts/<name>/.env, the real source of truth) instead of `hostname -s`
+# (docker/hosts/<name>/.env, the real source of truth) instead of `hostname -s`
 HOSTNAME_SHORT="$(basename "$(dirname "$ENV_FILE")")"
 
 CONF_SRC="$REPO_DIR/scripts/setup/keepalived/keepalived-${HOSTNAME_SHORT}.conf"

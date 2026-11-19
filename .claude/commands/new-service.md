@@ -16,7 +16,7 @@ Follow CONVENTIONS.md strictly: the rules for the internal port, `pihole-dns.yam
 1. Identify the official image most used for this service, and **check its latest release for real** before pinning an exact tag (see the Docker image policy in CONVENTIONS.md). Never guess.
 2. Find the internal port as described in CONVENTIONS.md. Never guess.
 3. With `host-port:<port>`, publish it on the host. Otherwise, no `ports:`.
-4. For private or both, when the service does **not** run on zangetsu: a label will not work, because Traefik only discovers containers on its own host. It goes in `infra/platform/networking/traefik/config/dynamic/cross-host.yml` instead.
+4. For private or both, when the service does **not** run on zangetsu: a label will not work, because Traefik only discovers containers on its own host. It goes in `docker/services/platform/networking/traefik/config/dynamic/cross-host.yml` instead.
 
 ## Skeletons
 
@@ -49,13 +49,13 @@ services:
       traefik.http.services.<name>.loadbalancer.server.port: "<port>"
 ```
 
-- Write the fragment to `infra/<category>/<name>/<name>.yaml`.
+- Write the fragment to `docker/services/<category>/<name>/<name>.yaml`.
 - Add an entry to `pihole-dns.yaml` (domain plus zangetsu's IP).
-- If it has a useful UI, add it to `infra/utilities/homepage/config/services.yaml` in the right group.
+- If it has a useful UI, add it to `docker/services/utilities/homepage/config/services.yaml` in the right group.
 
 ### PRIVATE, service outside zangetsu (urahara)
 
-The same skeleton, **without** the Traefik `labels` block (labels do not work across hosts). Add this to `infra/platform/networking/traefik/config/dynamic/cross-host.yml` instead:
+The same skeleton, **without** the Traefik `labels` block (labels do not work across hosts). Add this to `docker/services/platform/networking/traefik/config/dynamic/cross-host.yml` instead:
 
 ```yaml
 http:
@@ -105,9 +105,9 @@ services:
       dockflare.access.group: "<ask the user; omit this label if they do not say>"
 ```
 
-- Write the fragment to `infra/<category>/<name>/<name>.yaml`.
+- Write the fragment to `docker/services/<category>/<name>/<name>.yaml`.
 - Ask which `dockflare.access.group` to use. If the user does not say, omit the label; never assume `homelab-admin` (see the exceptions in CONVENTIONS.md).
-- If it has a useful UI, add it to `infra/utilities/homepage/config/services.yaml` in the right group.
+- If it has a useful UI, add it to `docker/services/utilities/homepage/config/services.yaml` in the right group.
 
 ### BOTH (private and public)
 
@@ -117,7 +117,7 @@ The PUBLIC skeleton plus the PRIVATE skeleton's Traefik `labels` block (or its `
 
 ### EXPORT
 
-- Write the fragment to `infra/observability/metrics/exporters/<name>/<name>.yaml`.
+- Write the fragment to `docker/services/observability/metrics/exporters/<name>/<name>.yaml`.
 - Add a scrape job to `prometheus.yml`.
 - No Traefik, no Pi-hole, no DockFlare, no Homepage.
 
@@ -139,7 +139,7 @@ labels:
 
 ## Activation
 
-With `active`, add the line to `include:` in `hosts/<host>/compose.yaml` as usual.
+With `active`, add the line to `include:` in `docker/hosts/<host>/compose.yaml` as usual.
 
 With `standby`, build the whole structure as if it were active (the service fragment with its Traefik labels, `pihole-dns.yaml`, Homepage) but comment out only the matching line in `include:`, so the container does not start until someone uncomments it. There is no separate step to "switch off" the routing: the Traefik labels live inside the service's own fragment, so they only take effect once the container is up.
 

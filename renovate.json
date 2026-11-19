@@ -8,7 +8,7 @@
   "enabledManagers": ["docker-compose"],
   "docker-compose": {
     "managerFilePatterns": [
-      "/(^|/)infra/.+\\.yaml$/"
+      "/(^|/)docker/services/.+\\.yaml$/"
     ]
   },
   "ignorePaths": [],

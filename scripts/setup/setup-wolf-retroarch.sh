@@ -11,7 +11,7 @@ REPO_DIR="/opt/homelab"
 WOLF_DIR="/opt/apps/wolf"
 PROFILE="$WOLF_DIR/profile-data/user/WolfRetroarch/.config/retroarch"
 CACHE="$WOLF_DIR/cache"
-OPTS_SRC="$REPO_DIR/infra/media-player/wolf/config/core-options"
+OPTS_SRC="$REPO_DIR/docker/services/media-player/wolf/config/core-options"
 BIOS_SRC="/mnt/games-4tb/retro/bios/pcsx2"
 APP_UID=1000
 APP_GID=1000
@@ -55,8 +55,8 @@ CORES=(
 # Run-Ahead doubles the cost). Names = corename from the .info.
 CORE_DIRS_2D=("Snes9x" "FCEUmm" "Nestopia" "Genesis Plus GX" "PicoDrive" "Gambatte" "mGBA")
 CORE_DIRS_SHADER_ONLY=("FinalBurn Neo")
-CFG_SRC="$REPO_DIR/infra/media-player/wolf/config/retroarch"
-CORE_OVR_SRC="$REPO_DIR/infra/media-player/wolf/config/core-overrides"
+CFG_SRC="$REPO_DIR/docker/services/media-player/wolf/config/retroarch"
+CORE_OVR_SRC="$REPO_DIR/docker/services/media-player/wolf/config/core-overrides"
 
 as_app() { sudo install -d -o "$APP_UID" -g "$APP_GID" "$@"; }
 

@@ -7,9 +7,9 @@
 set -uo pipefail
 
 # --- Settings ---
-HOMELAB_ENV="/opt/homelab/hosts/zangetsu/.env"
+HOMELAB_ENV="/opt/homelab/docker/hosts/zangetsu/.env"
 PIHOLE_URL="http://172.22.0.240"
-DNS_FILE="/opt/homelab/infra/platform/networking/pi-hole/config/pihole-dns.yaml"
+DNS_FILE="/opt/homelab/docker/services/platform/networking/pi-hole/config/pihole-dns.yaml"
 
 if [ ! -f "$HOMELAB_ENV" ]; then
   echo "❌ .env file not found: $HOMELAB_ENV"

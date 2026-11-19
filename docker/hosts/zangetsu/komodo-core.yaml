@@ -1,0 +1,14 @@
+# Its own Compose project on purpose: komodo-core must never share the
+# "homelab" project with the Stack that Komodo itself deploys, or it kills
+# itself midway through the deploy. Full incident in docs/komodo.md.
+# Deploy by hand only, never through Komodo, and never with -f alongside
+# compose.yaml:
+#   cd docker/hosts/zangetsu && docker compose -f komodo-core.yaml up -d
+name: komodo-core
+
+networks:
+  cloudflare-net:
+    external: true
+
+include:
+  - ../../services/platform/management/komodo/komodo.yaml

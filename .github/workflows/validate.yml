@@ -30,7 +30,7 @@ jobs:
       - name: Render every host entry point
         run: |
           set -euo pipefail
-          for f in hosts/*/compose.yaml hosts/*/komodo-*.yaml; do
+          for f in docker/hosts/*/compose.yaml docker/hosts/*/komodo-*.yaml; do
             [ -f "$f" ] || continue
             grep -q '^include:' "$f" || continue
             dir=$(dirname "$f")
@@ -45,8 +45,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: shellcheck
         run: |
-          find scripts infra -name '*.sh' -print0 | xargs -0 shellcheck -S warning
-          shellcheck -S warning infra/media-player/sync/rclone/xdg-open
+          find scripts docker -name '*.sh' -print0 | xargs -0 shellcheck -S warning
+          shellcheck -S warning docker/services/media-player/sync/rclone/xdg-open
 
   python:
     runs-on: ubuntu-latest

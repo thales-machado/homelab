@@ -1,0 +1,46 @@
+name: homelab
+
+networks:
+  cloudflare-net:
+    driver: bridge
+    name: cloudflare-net
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
+          gateway: 172.22.0.1
+  dockflare-internal:
+    name: dockflare-internal
+    driver: bridge
+
+include:
+  - ../../services/automation/dagu/dagu.yaml
+  - ../../services/finance/firefly-iii-data-importer/fidi.yaml
+  - ../../services/finance/firefly-iii/firefly-iii.yaml
+  - ../../services/observability/logs/grafana-alloy/grafana-alloy.yaml
+  - ../../services/observability/logs/loki/loki.yaml
+  - ../../services/observability/metrics/exporters/blackbox-exporter/blackbox-exporter.yaml
+  - ../../services/observability/metrics/exporters/cadvisor/cadvisor.yaml
+  - ../../services/observability/metrics/exporters/node-exporter/node-exporter.yaml
+  - ../../services/observability/metrics/exporters/postgres-exporter/postgres-exporter.yaml
+  - ../../services/observability/metrics/exporters/redis-exporter/redis-exporter.yaml
+  - ../../services/observability/metrics/exporters/smartctl-exporter/smartctl-exporter.yaml
+  - ../../services/observability/metrics/grafana/grafana.yaml
+  - ../../services/observability/metrics/unpoller/unpoller.yaml
+  - ../../services/observability/metrics/victoriametrics/victoriametrics.yaml
+  - ../../services/observability/monitoring/dozzle/dozzle.yaml
+  - ../../services/observability/monitoring/uptime-kuma/uptime-kuma.yaml
+  - ../../services/observability/scrutiny/scrutiny.yaml
+  - ../../services/platform/management/autoheal/autoheal.yaml
+  - ../../services/platform/management/watchtower/watchtower.yaml
+  - ../../services/platform/monitoring/healthchecks/healthchecks.yaml
+  - ../../services/platform/networking/cloudflared-agent/cloudflared-agent.yaml
+  - ../../services/platform/networking/dockflare/dockflare.yaml
+  - ../../services/platform/networking/keepalived/keepalived.yaml
+  - ../../services/platform/networking/nebula-sync/nebula-sync.yaml
+  - ../../services/platform/networking/pi-hole/pi-hole.yaml
+  - ../../services/platform/networking/tailscale/tailscale.yaml
+  - ../../services/platform/networking/traefik/traefik.yaml
+  - ../../services/platform/security/vaultwarden/vaultwarden.yaml
+  - ../../services/utilities/homepage/homepage.yaml
+  - ../../services/utilities/openspeedtest/openspeedtest.yaml
+  - ../../services/utilities/thalesmachado-net/thalesmachado-net.yaml

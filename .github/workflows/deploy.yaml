@@ -9,19 +9,20 @@
 # komodo.yaml for the DeployStackIfChanged bug).
 #
 # Instead of a static path filter, this reads the include: of each
-# hosts/<host>/compose.yaml to know which infra/ fragments that host really
-# uses, and triggers a stack only when a changed file falls inside one of
-# them (or inside its own hosts/<host>/). A fragment included by both hosts
-# triggers both; a host-exclusive fragment triggers only that host.
+# docker/hosts/<host>/compose.yaml to know which docker/services/ fragments
+# that host really uses, and triggers a stack only when a changed file falls
+# inside one of them (or inside its own docker/hosts/<host>/). A fragment
+# included by both hosts triggers both; a host-exclusive fragment triggers
+# only that host.
 name: Deploy Homelab
 
 on:
   push:
     branches: [main]
     paths:
-      - "hosts/zangetsu/**"
-      - "hosts/urahara/**"
-      - "infra/**"
+      - "docker/hosts/zangetsu/**"
+      - "docker/hosts/urahara/**"
+      - "docker/services/**"
 
 jobs:
   detect-changes:
@@ -45,18 +46,18 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED"
 
-          # Collect the infra/ paths referenced by include:, skipping
+          # Collect the docker/services/ paths referenced by include:, skipping
           # commented lines and local overrides without the ../../ prefix
-          # (already covered by the hosts/<host>/ match), then reduce each to
-          # its fragment directory.
+          # (already covered by the docker/hosts/<host>/ match), then reduce
+          # each to its fragment directory.
           get_prefixes() {
             grep -E '^\s*-\s*\.\./\.\./[^#[:space:]]' "$1" \
-              | sed -E 's/^\s*-\s*//; s/\s*#.*$//; s|^\.\./\.\./||' \
+              | sed -E 's/^\s*-\s*//; s/\s*#.*$//; s|^\.\./\.\./|docker/|' \
               | xargs -n1 dirname | sort -u
           }
 
-          Z_PREFIXES=$(get_prefixes hosts/zangetsu/compose.yaml)
-          U_PREFIXES=$(get_prefixes hosts/urahara/compose.yaml)
+          Z_PREFIXES=$(get_prefixes docker/hosts/zangetsu/compose.yaml)
+          U_PREFIXES=$(get_prefixes docker/hosts/urahara/compose.yaml)
 
           match_host() {
             local hostdir="$2"
@@ -71,8 +72,8 @@ jobs:
             echo false
           }
 
-          echo "zangetsu=$(match_host "$Z_PREFIXES" hosts/zangetsu)" >> "$GITHUB_OUTPUT"
-          echo "urahara=$(match_host "$U_PREFIXES" hosts/urahara)" >> "$GITHUB_OUTPUT"
+          echo "zangetsu=$(match_host "$Z_PREFIXES" docker/hosts/zangetsu)" >> "$GITHUB_OUTPUT"
+          echo "urahara=$(match_host "$U_PREFIXES" docker/hosts/urahara)" >> "$GITHUB_OUTPUT"
 
   deploy-zangetsu:
     needs: detect-changes

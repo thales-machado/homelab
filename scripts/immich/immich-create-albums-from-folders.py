@@ -30,7 +30,7 @@ from pathlib import PurePosixPath
 
 import requests
 
-HOMELAB_ENV = "/opt/homelab/hosts/urahara/.env"
+HOMELAB_ENV = "/opt/homelab/docker/hosts/urahara/.env"
 IMMICH_URL = "https://immich.lan.thalespm.me"
 DEFAULT_LIBRARY_NAME = "Lib Externa - Thales"
 CONTAINER_LIBRARY_PREFIX = "/mnt/library"

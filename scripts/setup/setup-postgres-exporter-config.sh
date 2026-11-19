@@ -2,7 +2,7 @@
 # Renders the postgres_exporter config (auth_modules for multi-target mode
 # via /probe) for the container.
 #   Source config is versioned in
-#   infra/observability/metrics/exporters/postgres-exporter/config/postgres_exporter.yml
+#   docker/services/observability/metrics/exporters/postgres-exporter/config/postgres_exporter.yml
 #   with placeholders __DB_USER__/__DB_PASSWORD__/__PAPERLESS_DBUSER__/
 #   __PAPERLESS_DBPASS__; never commit a real password. This script replaces
 #   them with the .env values and writes the result to
@@ -20,7 +20,7 @@ set -euo pipefail
 REPO_DIR="/opt/homelab"
 ENV_FILE="${HOMELAB_ENV:?HOMELAB_ENV is not set}"
 
-CONF_SRC="$REPO_DIR/infra/observability/metrics/exporters/postgres-exporter/config/postgres_exporter.yml"
+CONF_SRC="$REPO_DIR/docker/services/observability/metrics/exporters/postgres-exporter/config/postgres_exporter.yml"
 if [ ! -f "$CONF_SRC" ]; then
   echo "Error: source config not found at $CONF_SRC"
   exit 1

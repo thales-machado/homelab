@@ -14,10 +14,10 @@ Instructions for coding agents working in this repository. It holds no rules of 
 
 ## What is true in this repository
 
-- **`include:` in `hosts/<host>/compose.yaml` is the only source of truth about what exists.** A fragment outside every host's `include:` is legacy: never report it as a gap or an inconsistency, never suggest enabling it, and keep it out of any audit.
+- **`include:` in `docker/hosts/<host>/compose.yaml` is the only source of truth about what exists.** A fragment outside every host's `include:` is legacy: never report it as a gap or an inconsistency, never suggest enabling it, and keep it out of any audit.
 - **An audit of conventions** (resource limits, `TZ`, Watchtower labels, backup, DNS and Traefik, monitoring) runs **only** over fragments that are active in an `include:`.
-- **The real `.env` of each host** lives at `/opt/homelab/hosts/<hostname>/.env` on the host itself and is never in the repo. `.env.example` lists the variable names only. Never print a secret's value: read a variable's **name** from `.env` when you need to confirm it exists, and refer to it as `${NAME}`.
-- Commands run from inside `hosts/<hostname>/`.
+- **The real `.env` of each host** lives at `/opt/homelab/docker/hosts/<hostname>/.env` on the host itself and is never in the repo. `.env.example` lists the variable names only. Never print a secret's value: read a variable's **name** from `.env` when you need to confirm it exists, and refer to it as `${NAME}`.
+- Commands run from inside `docker/hosts/<hostname>/`.
 
 ## Working on the hosts
 

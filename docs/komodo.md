@@ -1,14 +1,14 @@
 # Komodo (multi-host Docker management)
 
-Core runs only on zangetsu (`infra/platform/management/komodo/komodo.yaml`: postgres + ferretdb + core). Periphery is host-agnostic, one agent per host (`infra/platform/management/komodo/periphery.yaml`). Deploys come from GitHub Actions (`.github/workflows/deploy.yaml`), which calls the `/listener/github/stack/<id>/deploy` webhook per host and only triggers the hosts whose `include:` covers the changed files.
+Core runs only on zangetsu (`docker/services/platform/management/komodo/komodo.yaml`: postgres + ferretdb + core). Periphery is host-agnostic, one agent per host (`docker/services/platform/management/komodo/periphery.yaml`). Deploys come from GitHub Actions (`.github/workflows/deploy.yaml`), which calls the `/listener/github/stack/<id>/deploy` webhook per host and only triggers the hosts whose `include:` covers the changed files.
 
 **`komodo-core` and `komodo-periphery` must NEVER be in the `include:` of the `compose.yaml` that the `homelab-<host>` Stack itself manages.** A real `DeployStack` recreating the Core or Periphery container kills the very process running the deploy: Periphery runs `docker compose` as its own subprocess, and Core tracks the deploy's progress inside itself. What this looked like in production: half the host's containers stuck in `Created` (never reaching `Started`, and `restart: unless-stopped` does not help because the container never existed long enough to have a restart policy applied), with the Stack stuck in `DOWN` / `0 Services` and the update "Complete" with `success:false` forever, logging `"Komodo shutdown during execution"` or simply losing the Periphery process.
 
-**Removing them from `include:` is not enough**, which was tested and confirmed: the container still carried the Stack's `com.docker.compose.project` (`homelab`, inherited from the Stack's `project_name:`), and Komodo operates at the **Compose project** level, not only on the declared files. The fix is that `hosts/<host>/komodo-periphery.yaml` and `hosts/zangetsu/komodo-core.yaml` are **their own Compose projects** (`name: komodo-periphery` / `name: komodo-core`, `networks: cloudflare-net: external: true`, and an `include:` of only the relevant fragments, never the main `compose.yaml`, which would drag the whole `homelab` project along). Deploying or updating those two is **always manual**, never through Komodo or a webhook:
+**Removing them from `include:` is not enough**, which was tested and confirmed: the container still carried the Stack's `com.docker.compose.project` (`homelab`, inherited from the Stack's `project_name:`), and Komodo operates at the **Compose project** level, not only on the declared files. The fix is that `docker/hosts/<host>/komodo-periphery.yaml` and `docker/hosts/zangetsu/komodo-core.yaml` are **their own Compose projects** (`name: komodo-periphery` / `name: komodo-core`, `networks: cloudflare-net: external: true`, and an `include:` of only the relevant fragments, never the main `compose.yaml`, which would drag the whole `homelab` project along). Deploying or updating those two is **always manual**, never through Komodo or a webhook:
 
 ```bash
-cd hosts/<host> && docker compose -f komodo-periphery.yaml up -d
-cd hosts/zangetsu && docker compose -f komodo-core.yaml up -d   # zangetsu only
+cd docker/hosts/<host> && docker compose -f komodo-periphery.yaml up -d
+cd docker/hosts/zangetsu && docker compose -f komodo-core.yaml up -d   # zangetsu only
 ```
 
 urahara has one extra override included from inside its own `komodo-periphery.yaml` (the published port, `komodo-periphery-port.yaml`). Do not confuse it with the host's main `compose.yaml`.

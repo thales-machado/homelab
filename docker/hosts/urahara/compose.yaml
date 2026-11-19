@@ -1,0 +1,46 @@
+name: homelab
+
+networks:
+  cloudflare-net:
+    driver: bridge
+    name: cloudflare-net
+    ipam:
+      config:
+        - subnet: 172.23.0.0/24
+          gateway: 172.23.0.1
+  dockflare-internal:
+    name: dockflare-internal
+    driver: bridge
+
+# Fragments are added here as services are created on or migrated to this host.
+include:
+  - ../../services/automation/n8n/n8n.yaml
+  - ../../services/content/immich/immich.yaml
+  - ../../services/integration/evolution-api/evolution-api.yaml
+  - ../../services/content/paperless-ngx/paperless-ngx.yaml
+  - ../../services/content/stirling-pdf/stirling-pdf.yaml
+  - ../../services/content/tandoor/tandoor.yaml
+  - ../../services/media-player/samba/samba.yaml
+  - ../../services/media-player/sync/rclone/rclone.yaml
+  - ../../services/media-player/wolf/wolf.yaml
+  - ../../services/observability/logs/grafana-alloy/grafana-alloy.yaml
+  - ../../services/observability/metrics/exporters/cadvisor/cadvisor.yaml
+  - ../../services/observability/metrics/exporters/node-exporter/node-exporter.yaml
+  - ../../services/observability/metrics/exporters/redis-exporter/redis-exporter-urahara.yaml
+  - ../../services/observability/metrics/exporters/smartctl-exporter/smartctl-exporter.yaml
+  - ../../services/observability/monitoring/dozzle-agent/dozzle-agent.yaml
+  - ../../services/platform/management/autoheal/autoheal.yaml
+  - ../../services/platform/management/watchtower/watchtower.yaml
+  - ../../services/platform/networking/dockflare-agent/dockflare-agent.yaml
+  - ../../services/platform/security/crowdsec/crowdsec.yaml
+  - ../../services/utilities/qbittorrent/qbittorrent.yaml
+  - ../../services/platform/networking/keepalived/keepalived.yaml
+  - ../../services/platform/networking/pi-hole/pi-hole.yaml
+  - ../../services/platform/networking/tailscale/tailscale.yaml
+  - ../../services/smart-home/home-assistant/home-assistant.yaml
+  - ../../services/utilities/calnode/calnode.yaml
+  - ../../services/utilities/it-tools/it-tools.yaml
+  - ../../services/utilities/trilium/trilium.yaml
+  - ../../services/utilities/vikunja/vikunja.yaml
+  - observability-ports.yaml
+  - pi-hole-network.yaml

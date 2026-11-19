@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'infra/platform/networking/pi-hole/config/pihole-dns.yaml'
+      - 'docker/services/platform/networking/pi-hole/config/pihole-dns.yaml'
 
 jobs:
   sync:

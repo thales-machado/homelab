@@ -1,6 +1,6 @@
 #!/bin/bash
 # Merges into ES-DE's es_settings.xml (WolfES-DE profile) the keys versioned in
-# infra/media-player/wolf/config/es-de/es-settings-overrides.txt (format
+# docker/services/media-player/wolf/config/es-de/es-settings-overrides.txt (format
 # "<type> <Key> <value>", one per line). Only touches the listed keys; the rest
 # of the file stays as is.
 # Also installs the custom PCSX2 find rule (es_find_rules.xml) and the wrapper
@@ -18,9 +18,9 @@ set -euo pipefail
 REPO_DIR="/opt/homelab"
 PROFILE="/opt/apps/wolf/profile-data/user/WolfES-DE"
 SETTINGS="$PROFILE/ES-DE/settings/es_settings.xml"
-OVERRIDES="$REPO_DIR/infra/media-player/wolf/config/es-de/es-settings-overrides.txt"
-FIND_RULES_SRC="$REPO_DIR/infra/media-player/wolf/config/es-de/es_find_rules.xml"
-PCSX2_LAUNCH_SRC="$REPO_DIR/infra/media-player/wolf/config/es-de/pcsx2-launch.sh"
+OVERRIDES="$REPO_DIR/docker/services/media-player/wolf/config/es-de/es-settings-overrides.txt"
+FIND_RULES_SRC="$REPO_DIR/docker/services/media-player/wolf/config/es-de/es_find_rules.xml"
+PCSX2_LAUNCH_SRC="$REPO_DIR/docker/services/media-player/wolf/config/es-de/pcsx2-launch.sh"
 
 if ! sudo test -f "$SETTINGS"; then
   echo "Error: $SETTINGS does not exist - open ES-DE once through Moonlight first"

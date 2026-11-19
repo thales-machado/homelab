@@ -11,7 +11,7 @@
 set -eu
 
 REPO_DIR="${REPO_DIR:-/opt/homelab}"
-ENV_FILE="${HOMELAB_ENV:-$REPO_DIR/hosts/zangetsu/.env}"
+ENV_FILE="${HOMELAB_ENV:-$REPO_DIR/docker/hosts/zangetsu/.env}"
 HC_URL="${HC_URL:-http://healthchecks:8000}"
 DRY_RUN="${DRY_RUN:-0}"
 ACCEPT="application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json"
@@ -56,7 +56,7 @@ while read -r name tag file; do
     updates="$updates ${name}:${tag}"
   fi
 done <<EOF
-wolf stable infra/media-player/wolf/wolf.yaml
+wolf stable docker/services/media-player/wolf/wolf.yaml
 wolf-ui main scripts/setup/setup-wolf-config.sh
 retroarch edge scripts/setup/setup-wolf-config.sh
 es-de edge scripts/setup/setup-wolf-config.sh

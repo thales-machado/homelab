@@ -8,7 +8,7 @@ set -euo pipefail
 
 REPO_DIR="/opt/homelab"
 ENV_FILE="${HOMELAB_ENV:?HOMELAB_ENV is not set}"
-SRC_DIR="$REPO_DIR/infra/platform/networking/traefik/config"
+SRC_DIR="$REPO_DIR/docker/services/platform/networking/traefik/config"
 
 CROWDSEC_KEY=$(grep '^CROWDSEC_BOUNCER_KEY=' "$ENV_FILE" | cut -d'=' -f2-)
 if [ -z "$CROWDSEC_KEY" ]; then
