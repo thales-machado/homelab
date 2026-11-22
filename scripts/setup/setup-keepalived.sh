@@ -13,7 +13,13 @@
 set -euo pipefail
 
 REPO_DIR="/opt/homelab"
-ENV_FILE="${HOMELAB_ENV:?HOMELAB_ENV is not set}"
+# sudo does not inherit /etc/environment (PAM only loads it for login shells),
+# and this script needs root to write /opt/apps, so read it back when unset.
+ENV_FILE="${HOMELAB_ENV:-}"
+if [ -z "$ENV_FILE" ] && [ -r /etc/environment ]; then
+  ENV_FILE=$(grep -E '^HOMELAB_ENV=' /etc/environment | tail -1 | cut -d= -f2- | tr -d '"')
+fi
+: "${ENV_FILE:?HOMELAB_ENV is not set and not present in /etc/environment}"
 # the OS hostname can differ from the name used in the repo (e.g. zangetsu
 # is "lemon-pi5" in the OS), so derive it from the HOMELAB_ENV path
 # (docker/hosts/<name>/.env, the real source of truth) instead of `hostname -s`
