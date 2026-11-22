@@ -3,7 +3,8 @@
 #   Source config is versioned in scripts/setup/keepalived/keepalived-<host>.conf
 #   with a __VRRP_PASS__ placeholder; never commit the real password. This
 #   script replaces the placeholder with the .env value and writes the result
-#   to /opt/apps/keepalived/keepalived.conf, which the container
+#   to /opt/apps/keepalived/keepalived.conf, and copies the Pi-hole track
+#   script next to it, both of which the container
 #   (network_mode: host, docker/services/platform/networking/keepalived/keepalived.yaml)
 #   mounts read-only.
 # Rerun whenever the VRRP password or the versioned config changes, then run
@@ -31,11 +32,26 @@ if [ -z "$VRRP_PASS" ]; then
   exit 1
 fi
 
+CHECK_SRC="$REPO_DIR/scripts/networking/keepalived-check-pihole.sh"
+if [ ! -f "$CHECK_SRC" ]; then
+  echo "Error: track script not found: $CHECK_SRC"
+  exit 1
+fi
+
 mkdir -p /opt/apps/keepalived
 sed "s/__VRRP_PASS__/${VRRP_PASS}/" "$CONF_SRC" > /opt/apps/keepalived/keepalived.conf
 echo "✓ config rendered to /opt/apps/keepalived/keepalived.conf"
+
+# Docker creates a directory when a single-file bind mount source is missing,
+# which happens if the container is recreated before this script ever ran.
+if [ -d /opt/apps/keepalived/check-pihole.sh ]; then
+  rm -rf /opt/apps/keepalived/check-pihole.sh
+fi
+install -m 0755 "$CHECK_SRC" /opt/apps/keepalived/check-pihole.sh
+echo "✓ track script installed to /opt/apps/keepalived/check-pihole.sh"
 
 echo "OK - now start/recreate the container:"
 echo "  docker compose up -d --force-recreate keepalived"
 echo "  docker logs keepalived --tail 30"
 echo "  ip -o -4 addr show | grep 192.168.15.248   # should only show up on the MASTER host (zangetsu)"
+echo "  docker logs keepalived 2>&1 | grep chk_pihole   # track script must report succeeded, not failed"

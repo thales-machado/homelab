@@ -18,6 +18,8 @@ services:
     pids_limit: 64
     volumes:
       - /opt/apps/keepalived/keepalived.conf:/etc/keepalived/keepalived.conf:ro
+      # track script: releases the VIP when this host's Pi-hole stops answering.
+      - /opt/apps/keepalived/check-pihole.sh:/etc/keepalived/check-pihole.sh:ro
     # Pinned tag (2.3.4): no Watchtower label, versions managed manually.
     # See "Docker image policy" in CONVENTIONS.md.
     environment:
