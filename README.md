@@ -193,7 +193,10 @@ is bootstrap order, not caution.
 ```text
 docker/hosts/<host>/compose.yaml       entry point per host: include: list and overrides
 docker/services/<category>/<service>/  one self-contained Compose fragment per service
-k8s/                                   planned, see docs/kubernetes-platform.md
+k8s/cluster/                           kubeadm, Cilium and CoreDNS: applied by hand, pre-GitOps
+k8s/argocd/                            Argo CD itself, the root Application and one per component
+k8s/platform/                          what applications depend on: certificates, gateway, agents
+k8s/apps/                              one directory per application
 scripts/                               setup, backup, networking, inventory, systemd units
 terraform/healthchecks/                Healthchecks.io checks as code
 .github/workflows/                     validation, secret scanning, deploy, DNS sync

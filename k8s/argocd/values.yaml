@@ -1,0 +1,45 @@
+# Argo CD for seireitei. Chart 10.18.2 (app v3.6.2), installed 2026-11-23.
+# Install: helm install argocd argo/argo-cd --version <v> -n argocd \
+#            --create-namespace -f k8s/argocd/values.yaml
+# Check for a newer chart at upgrade time rather than reusing this number.
+
+global:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+# Single node, no SSO, explicit app-of-apps: three components that would only
+# cost memory here.
+dex:
+  enabled: false
+notifications:
+  enabled: false
+applicationSet:
+  enabled: false
+
+configs:
+  params:
+    # TLS is terminated by the Gateway once it exists; until then this avoids a
+    # self-signed certificate on every port-forward.
+    server.insecure: true
+
+controller:
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 512Mi}
+
+repoServer:
+  resources:
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {memory: 512Mi}
+
+server:
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 256Mi}
+
+redis:
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {memory: 128Mi}

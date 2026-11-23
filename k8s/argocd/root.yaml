@@ -1,0 +1,22 @@
+# The root Application: the only one applied by hand. It watches
+# k8s/argocd/applications/, so adding a component is a new file there and
+# removing one is deleting that file.
+# Apply: kubectl apply -f k8s/argocd/root.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/thales-machado/homelab
+    targetRevision: main
+    path: k8s/argocd/applications
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
