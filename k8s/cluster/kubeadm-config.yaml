@@ -32,6 +32,13 @@ networking:
 etcd:
   local:
     dataDir: /var/lib/etcd
+    # metrics on the LAN IP so VictoriaMetrics on zangetsu scrapes etcd directly,
+    # without anything inside the cluster in the path. PM-0010: an alert that
+    # depends on the failing component is not an alert. Port 2381 is the
+    # unauthenticated metrics listener, not the client port.
+    extraArgs:
+      - name: listen-metrics-urls
+        value: http://127.0.0.1:2381,http://192.168.15.215:2381
 apiServer:
   certSANs:
     - 192.168.15.215
