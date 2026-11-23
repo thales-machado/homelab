@@ -15,6 +15,13 @@ spec:
       values: |
         crds:
           enabled: true
+        # The DNS-01 self-check must not go through CoreDNS: the thalespm.me
+        # stub zone sends it to Pi-hole, whose split-horizon view breaks
+        # authoritative-nameserver discovery and leaves every challenge in
+        # "not yet propagated" while the TXT record is in fact public.
+        extraArgs:
+          - --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
+          - --dns01-recursive-nameservers-only
         resources:
           requests: {cpu: 10m, memory: 64Mi}
           limits: {memory: 192Mi}
