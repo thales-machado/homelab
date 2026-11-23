@@ -49,6 +49,24 @@ fi
 
 echo "==> thalesmachado-net"
 if kubectl get namespace thalesmachado-net >/dev/null 2>&1; then
+  # The GHCR packages are private. Only the classic PAT works: the
+  # fine-grained one answers 403 on the registry API (tested 2026-11-23).
+  pat=$(read_env GITHUB_PAT_CLASSIC)
+  cfg=$(printf '{"auths":{"ghcr.io":{"auth":"%s"}}}' \
+    "$(printf 'thales-machado:%s' "$pat" | base64 -w0)" | base64 -w0)
+  cat <<EOF | kubectl apply -f - >/dev/null
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ghcr
+  namespace: thalesmachado-net
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ${cfg}
+EOF
+  unset pat cfg
+  echo "  ok  thalesmachado-net/ghcr"
+
   # the same Komodo pair Homepage and the Docker sidecar already use.
   # Two keys, so a manifest over a pipe instead of put_secret: --from-literal
   # would put both values in argv, where ps can read them. base64 rather than

@@ -21,6 +21,9 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+      # both packages are private; the secret comes from the host's .env
+      imagePullSecrets:
+        - name: ghcr
       containers:
         - name: site
           image: ghcr.io/thales-machado/thalesmachado.net:latest
