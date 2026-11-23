@@ -1,0 +1,15 @@
+# Staging first: DNS-01 through cert-manager is unproven here, and a failed
+# attempt against production burns real quota. Flip issuerRef to letsencrypt
+# once this one issues.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lan-wildcard
+  namespace: gateway
+spec:
+  secretName: lan-wildcard-tls
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.lan.thalespm.me"
