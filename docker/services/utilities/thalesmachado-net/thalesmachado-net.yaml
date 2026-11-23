@@ -33,20 +33,19 @@ services:
       # thalespm.me will be removed later and the apex left empty (no redirect).
       dockflare.enable: "true"
       dockflare.hostname: "thalespm.me"
-      dockflare.service: "http://thalesmachado-net:80"
+      dockflare.service: "http://thalesmachado-net:8080"
       dockflare.0.hostname: "thalesmachado.net"
       dockflare.0.zonename: "thalesmachado.net"
-      dockflare.0.service: "http://thalesmachado-net:80"
+      dockflare.0.service: "http://thalesmachado-net:8080"
 
   thalesmachado-net-containers:
-    # Minimal sidecar (Deno, ~30 lines) that only sums container counts from
-    # 2 hosts via the Komodo API; plain nginx cannot reshape/sum JSON from two
-    # calls. It calls komodo-core directly (same network/host, see
-    # containers-sidecar/index.ts) instead of going through
-    # *.lan.thalespm.me/Traefik like the Uptime Kuma endpoint does: Komodo's
-    # location is fixed and known, so no host-agnostic care is needed.
-    build: ./containers-sidecar
-    image: thalesmachado-net-containers:local
+    # Minimal sidecar that sums container counts from both hosts via the Komodo
+    # API; plain nginx cannot reshape or sum the JSON of two calls. Source and
+    # CI moved to the website's own repo on 2026-11-23, so everything the site
+    # needs lives in one place; the image is published next to the site's.
+    # KOMODO_URL defaults to komodo-core:9120, which is right here; the cluster
+    # overrides it because that name only exists on this network.
+    image: ghcr.io/thales-machado/thalesmachado.net-containers:latest
     container_name: thalesmachado-net-containers
     restart: unless-stopped
     cpus: 0.10
