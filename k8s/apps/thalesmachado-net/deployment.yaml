@@ -1,0 +1,87 @@
+# Two containers in one pod on purpose: nginx proxies /api/homelab-containers
+# to the sidecar over 127.0.0.1, so there is no DNS and no start-order problem.
+# That is why CONTAINERS_RESOLVER is empty here and the upstream is a literal
+# address; in Docker the image's own defaults point at the sibling container.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thalesmachado-net
+  namespace: thalesmachado-net
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thalesmachado-net
+  template:
+    metadata:
+      labels:
+        app: thalesmachado-net
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: site
+          image: ghcr.io/thales-machado/thalesmachado.net:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: CONTAINERS_RESOLVER
+              value: ""
+            - name: CONTAINERS_UPSTREAM
+              value: http://127.0.0.1:3001
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 96Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+        - name: containers
+          image: ghcr.io/thales-machado/thalesmachado.net-containers:latest
+          ports:
+            - name: api
+              containerPort: 3001
+          env:
+            # komodo-core only answers to that name on zangetsu's Docker
+            # network; the host publishes the same port on the LAN.
+            - name: KOMODO_URL
+              value: http://192.168.15.214:9120/read
+            # the image's own DENO_DIR belongs to its user, and this pod runs
+            # as another one
+            - name: DENO_DIR
+              value: /tmp/deno
+            - name: KOMODO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: komodo-api
+                  key: key
+            - name: KOMODO_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: komodo-api
+                  key: secret
+          # TCP, not HTTP: every GET here calls the Komodo API twice
+          readinessProbe:
+            tcpSocket:
+              port: api
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 96Mi
+          securityContext:
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]

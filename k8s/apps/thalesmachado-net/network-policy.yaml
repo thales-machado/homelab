@@ -1,0 +1,42 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: thalesmachado-net
+  namespace: thalesmachado-net
+spec:
+  endpointSelector: {}
+  ingress:
+    # kubelet probes and the Gateway's proxy both arrive as host traffic
+    - fromEntities:
+        - host
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # nginx resolves uptime-kuma.lan.thalespm.me through the Pi-hole VIP, not
+    # through CoreDNS: that resolver is baked into the image's config.
+    - toCIDR:
+        - 192.168.15.248/32
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # 443 is Traefik, for the two Uptime Kuma endpoints; 9120 is komodo-core,
+    # for the sidecar.
+    - toCIDR:
+        - 192.168.15.214/32
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "9120"
+              protocol: TCP

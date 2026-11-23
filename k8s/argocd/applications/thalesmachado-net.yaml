@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: thalesmachado-net
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/thales-machado/homelab
+    targetRevision: main
+    path: k8s/apps/thalesmachado-net
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: thalesmachado-net
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: latest

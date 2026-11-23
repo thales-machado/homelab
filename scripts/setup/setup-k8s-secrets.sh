@@ -47,6 +47,31 @@ else
   echo "  skipped: namespace cert-manager does not exist" >&2
 fi
 
+echo "==> thalesmachado-net"
+if kubectl get namespace thalesmachado-net >/dev/null 2>&1; then
+  # the same Komodo pair Homepage and the Docker sidecar already use.
+  # Two keys, so a manifest over a pipe instead of put_secret: --from-literal
+  # would put both values in argv, where ps can read them. base64 rather than
+  # stringData so no value can break the YAML.
+  k=$(read_env KOMODO_API_KEY | base64 -w0)
+  v=$(read_env KOMODO_API_SECRET | base64 -w0)
+  cat <<EOF | kubectl apply -f - >/dev/null
+apiVersion: v1
+kind: Secret
+metadata:
+  name: komodo-api
+  namespace: thalesmachado-net
+type: Opaque
+data:
+  key: ${k}
+  secret: ${v}
+EOF
+  unset k v
+  echo "  ok  thalesmachado-net/komodo-api"
+else
+  echo "  skipped: namespace thalesmachado-net does not exist" >&2
+fi
+
 echo "==> argocd"
 if kubectl get namespace argocd >/dev/null 2>&1; then
   command -v htpasswd >/dev/null 2>&1 \
