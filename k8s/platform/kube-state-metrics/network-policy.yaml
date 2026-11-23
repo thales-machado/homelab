@@ -1,0 +1,32 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kube-state-metrics
+  namespace: kube-state-metrics
+spec:
+  endpointSelector: {}
+  ingress:
+    # kubelet probes
+    - fromEntities:
+        - host
+    # NodePort traffic from a local backend keeps the client's source address,
+    # and zangetsu is not a cluster node, so it arrives as plain LAN traffic.
+    - fromCIDR:
+        - 192.168.15.214/32
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEntities:
+        - kube-apiserver

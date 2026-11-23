@@ -157,6 +157,16 @@ scrape_configs:
         labels:
           host: urahara
 
+  # Object state for seireitei: pod phase, restarts, replicas, failed jobs.
+  # NodePort rather than a LoadBalancer address: the pool is for services people
+  # open, and this is a scrape target.
+  - job_name: "kube-state-metrics"
+    static_configs:
+      - targets: ["192.168.15.215:30808"]
+        labels:
+          host: urahara
+          cluster: seireitei
+
   # seireitei's etcd, scraped from outside the cluster on purpose (PM-0010).
   - job_name: "etcd-seireitei"
     static_configs:
