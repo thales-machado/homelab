@@ -48,11 +48,16 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
+    # an empty selector here matches every endpoint in the cluster, not just
+    # this namespace: it read as allow-all in the policy map. Spelled out.
     - fromEndpoints:
-        - {}
-    # kubelet probes and port-forward arrive from the host.
+        - matchLabels:
+            io.kubernetes.pod.namespace: argocd
+    # host covers kubelet probes and port-forward; ingress is the identity
+    # Cilium gives the Gateway's Envoy.
     - fromEntities:
         - host
+        - ingress
   egress:
     - toEndpoints:
         - {}

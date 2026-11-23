@@ -6,9 +6,13 @@ metadata:
 spec:
   endpointSelector: {}
   ingress:
-    # kubelet probes and the Gateway's proxy both arrive as host traffic
+    # kubelet probes arrive as host. The Gateway's proxy does NOT: Cilium gives
+    # Envoy the reserved "ingress" identity, so a policy that only allows host
+    # drops every request from the Gateway with a connect timeout, while the
+    # node itself still reaches the pod (2026-11-23).
     - fromEntities:
         - host
+        - ingress
   egress:
     - toEndpoints:
         - matchLabels:
