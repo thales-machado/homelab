@@ -1,6 +1,7 @@
 # seireitei: single control-plane node on urahara. See docs/kubernetes-platform.md.
 # Apply with: sudo kubeadm init --config k8s/cluster/kubeadm-config.yaml
----
+# No leading '---': kubeadm splits on the separator and a comment-only first
+# document fails with "kind and apiVersion is mandatory".
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
