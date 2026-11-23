@@ -1,0 +1,57 @@
+# seireitei: single control-plane node on urahara. See docs/kubernetes-platform.md.
+# Apply with: sudo kubeadm init --config k8s/cluster/kubeadm-config.yaml
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.15.215
+  bindPort: 6443
+nodeRegistration:
+  # the host's existing containerd, shared with Docker (CRI plugin already on)
+  criSocket: unix:///run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  imagePullSerial: true
+  name: urahara
+  # single node: no control-plane taint, or nothing would ever schedule
+  taints: []
+skipPhases:
+  # replaced by Cilium's kube-proxy replacement
+  - addon/kube-proxy
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+clusterName: seireitei
+kubernetesVersion: v1.37.2
+# IP, not a hostname: the cluster must not need Pi-hole to find its own API server
+controlPlaneEndpoint: 192.168.15.215:6443
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.60.0.0/16
+  serviceSubnet: 10.96.0.0/12
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+apiServer:
+  certSANs:
+    - 192.168.15.215
+    - urahara
+    - seireitei.lan.thalespm.me
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+# systemReserved carries the 42 Docker containers: the kubelet does not see them,
+# so without this it would schedule pods until the host OOMs and kills Pi-hole,
+# Traefik and the rest. Allocatable lands near 11Gi of the 28Gi.
+kubeReserved:
+  cpu: 500m
+  memory: 2Gi
+  ephemeral-storage: 10Gi
+systemReserved:
+  cpu: "2"
+  memory: 14Gi
+  ephemeral-storage: 20Gi
+evictionHard:
+  memory.available: 1Gi
+  nodefs.available: 10%
+  imagefs.available: 15%
