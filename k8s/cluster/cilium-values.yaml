@@ -14,6 +14,11 @@ k8sServicePort: 6443
 ipam:
   mode: kubernetes
 
+# Needs the Gateway API CRDs already installed (v1.6.3, by Argo) and
+# kubeProxyReplacement above. Enabling it restarts the operator and the agent.
+gatewayAPI:
+  enabled: true
+
 # L2 announcements answer ARP for LoadBalancer addresses on the LAN, replacing
 # MetalLB. They churn leases, which is why the client rate limit goes up.
 l2announcements:
