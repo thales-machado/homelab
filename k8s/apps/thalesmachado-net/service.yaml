@@ -9,4 +9,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: http
+      # numeric, not the container port's name: Cilium's Gateway API builds the
+      # Envoy cluster by a different path than ClusterIP routing, and a named
+      # targetPort does not survive it (503, connection timeout, 2026-11-23).
+      targetPort: 8080
