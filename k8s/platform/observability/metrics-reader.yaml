@@ -1,0 +1,42 @@
+# Read-only identity for the VictoriaMetrics on zangetsu to scrape the kubelet
+# from outside the cluster. The token lives in a Secret rather than being minted
+# with `kubectl create token` because a scrape target cannot renew its own
+# credential on a schedule.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metrics-reader
+  namespace: observability
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: metrics-reader
+  namespace: observability
+  annotations:
+    kubernetes.io/service-account.name: metrics-reader
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metrics-reader
+rules:
+  - apiGroups: [""]
+    resources: [nodes/metrics, nodes/stats, nodes/proxy]
+    verbs: [get]
+  - nonResourceURLs: [/metrics, /metrics/cadvisor]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metrics-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: metrics-reader
+    namespace: observability

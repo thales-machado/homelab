@@ -157,6 +157,33 @@ scrape_configs:
         labels:
           host: urahara
 
+  # Container CPU, memory, network and disk inside seireitei, read straight from
+  # the node. insecure_skip_verify because kubeadm gives the kubelet a
+  # self-signed serving certificate unless serverTLSBootstrap is on.
+  # Token installed by scripts/setup/setup-victoriametrics-k8s-token.sh.
+  - job_name: "kubelet-seireitei"
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    bearer_token_file: /etc/vm/secrets/seireitei-token
+    static_configs:
+      - targets: ["192.168.15.215:10250"]
+        labels:
+          host: urahara
+          cluster: seireitei
+
+  - job_name: "cadvisor-seireitei"
+    scheme: https
+    metrics_path: /metrics/cadvisor
+    tls_config:
+      insecure_skip_verify: true
+    bearer_token_file: /etc/vm/secrets/seireitei-token
+    static_configs:
+      - targets: ["192.168.15.215:10250"]
+        labels:
+          host: urahara
+          cluster: seireitei
+
   # Object state for seireitei: pod phase, restarts, replicas, failed jobs.
   # NodePort rather than a LoadBalancer address: the pool is for services people
   # open, and this is a scrape target.
