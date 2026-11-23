@@ -16,5 +16,7 @@ token=$(ssh -o BatchMode=yes -o ConnectTimeout=10 "$REMOTE" \
 # is the one urahara knows
 printf '%s' "$token" | base64 -d | sudo tee "$DEST" >/dev/null
 sudo chmod 0600 "$DEST"
-echo "ok  $DEST ($(sudo wc -c <"$DEST") bytes)"
+# stat under sudo, not `wc -c <file`: the calling shell opens a `<` redirect
+# itself and cannot read a root-only file.
+echo "ok  $DEST ($(sudo stat -c %s "$DEST") bytes)"
 echo "now: cd /opt/homelab/docker/hosts/zangetsu && docker compose restart victoriametrics"
