@@ -1,6 +1,4 @@
-# Staging first: DNS-01 through cert-manager is unproven here, and a failed
-# attempt against production burns real quota. Flip issuerRef to letsencrypt
-# once this one issues.
+# Proven against staging on 2026-11-23, then moved to production.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -9,7 +7,7 @@ metadata:
 spec:
   secretName: lan-wildcard-tls
   issuerRef:
-    name: letsencrypt-staging
+    name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
     - "*.lan.thalespm.me"

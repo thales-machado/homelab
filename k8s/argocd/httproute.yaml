@@ -1,0 +1,18 @@
+# Applied by hand, like the rest of k8s/argocd/: Argo does not manage its own
+# exposure. Cross-namespace parentRef needs no ReferenceGrant; only a
+# cross-namespace backendRef would.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: lan
+      namespace: gateway
+  hostnames:
+    - argocd.lan.thalespm.me
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          port: 80

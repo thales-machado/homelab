@@ -23,6 +23,11 @@ records:
   - domain: komodo.lan.thalespm.me
     ip: 192.168.15.214
 
+  # --- Platform - Kubernetes ---
+  # Points at the seireitei Gateway (Cilium L2), not at Traefik.
+  - domain: argocd.lan.thalespm.me
+    ip: 192.168.15.241
+
   # --- Platform - Backup ---
   - domain: rclone.lan.thalespm.me
     ip: 192.168.15.214

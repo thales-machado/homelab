@@ -217,6 +217,22 @@ port 53 as well, so without it every pod in the namespace resolves nothing and
 the failure looks like the application being broken rather than the policy. Add
 it in the same commit as the deny, never after.
 
+**cert-manager's DNS-01 self-check must bypass the cluster's own DNS.** The
+`thalespm.me` stub zone sends every lookup to Pi-hole, whose split-horizon view
+breaks authoritative-nameserver discovery, so a challenge sits in
+`Waiting for DNS-01 challenge propagation` while the TXT record is in fact
+public and answering from 1.1.1.1, 8.8.8.8 and Pi-hole itself. The fix is on
+cert-manager, not on the policy: `--dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53`
+and `--dns01-recursive-nameservers-only`. The namespace policy must also allow
+egress to `world` on port 53, not only 443: the self-check queries the
+authoritative servers directly.
+
+**A Gateway's address is pinned in the Gateway, and Cilium honours it.**
+`spec.addresses` with `type: IPAddress` gets that address out of the pool, which
+is what lets a Pi-hole record point at it. Prove a new certificate path against
+`letsencrypt-staging` before `letsencrypt`: a failed production attempt spends
+real quota.
+
 **Gateway API CRDs go in before Cilium's `gatewayAPI.enabled`.** The chart only
 renders the `GatewayClass` when the CRD already exists at template time, so
 enabling the feature first leaves `enable-gateway-api: true` in `cilium-config`,
