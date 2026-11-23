@@ -349,6 +349,28 @@ Right: `VAULTWARDEN_DOMAIN`, `KOMODO_JWT_SECRET`, `KOMODO_PASSKEY`, `VAULTWARDEN
 
 Lowercase kebab-case for every file and folder in the repo (`.yaml`, `.sh`, `.md`, ...): `sqlite-backup.yaml`, `notify-mount-failure.sh`. Never CamelCase, snake_case or UPPERCASE in a file name, even when the document's internal title uses other casing. Only names imposed by an external tool are exempt (e.g. `Dockerfile`, `README.md`, `LICENSE`).
 
+## Comments
+
+Comments in YAML, scripts and Terraform are short: one or two lines, three at
+the most. They say **why**, never what the line already says, and they are
+written for someone who has the file open and needs to not break it.
+
+The narrative belongs here or in `docs/`: the incident, the alternatives
+weighed, the measurements, the history. A comment that needs a paragraph is a
+comment pointing at the wrong place, so it becomes one line plus a reference
+("see X in CONVENTIONS.md"). This file is long on purpose; the config files are
+not.
+
+What earns a comment in the file itself is the thing that bites at the keyboard
+and has no other warning: a value that looks arbitrary and is not
+(`pids_limit: 64`), a field whose format changed between versions, a trap that
+silently produces the wrong result (the missing leading `---` in the kubeadm
+config). What does not: restating the key below it, describing what the service
+is, or explaining a decision that CONVENTIONS already explains.
+
+Applies to this file too. A section that grows past what an operator reads at
+the keyboard moves to `docs/` and leaves a link.
+
 ## scripts/ layout
 
 No script lives directly in `scripts/`. Each goes in a subfolder by **function**, not by app:

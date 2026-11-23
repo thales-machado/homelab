@@ -9,13 +9,13 @@ global:
     seccompProfile:
       type: RuntimeDefault
 
-# Single node, no SSO, explicit app-of-apps: three components that would only
-# cost memory here.
+# Single node and no SSO, so these two only cost memory. The ApplicationSet
+# controller cannot be turned off: chart 10.18.2 has no `enabled` key under
+# `applicationSet`, it is always installed. Left running rather than scaled to
+# zero, which would be a lie in a different place.
 dex:
   enabled: false
 notifications:
-  enabled: false
-applicationSet:
   enabled: false
 
 configs:
