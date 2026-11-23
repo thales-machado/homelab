@@ -1,0 +1,46 @@
+# CoreDNS for seireitei. The ".:53" block is copied verbatim from what kubeadm
+# 1.37.2 generated; only the thalespm.me stub zone below it is ours.
+# kubeadm rewrites this ConfigMap on upgrade, so re-apply after every upgrade
+# until Argo CD owns it (then Argo puts it back within three minutes).
+# Apply: kubectl apply -f k8s/cluster/coredns-configmap.yaml
+#        kubectl -n kube-system rollout restart deploy/coredns
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+           pods insecure
+           fallthrough in-addr.arpa ip6.arpa
+           ttl 30
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf {
+           max_concurrent 1000
+        }
+        cache 30 {
+           disable success cluster.local
+           disable denial cluster.local
+        }
+        loop
+        reload
+        loadbalance
+    }
+    # PM-0011: forward balances across every resolver in resolv.conf instead of
+    # falling back like the C library, so with a split horizon half the lookups
+    # for a homelab hostname come back NXDOMAIN. Both targets serve the same
+    # records (Nebula Sync), so balancing between these two is safe: the VIP
+    # first, urahara direct to cover the VIP's failover window.
+    thalespm.me:53 {
+        errors
+        cache 30
+        forward . 192.168.15.248 192.168.15.215
+    }
