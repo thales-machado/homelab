@@ -12,6 +12,18 @@ if [ -z "$ENV_FILE" ] && [ -r /etc/environment ]; then
 fi
 : "${ENV_FILE:?HOMELAB_ENV is not set and not present in /etc/environment}"
 
+# kubectl under sudo has no kubeconfig of its own, and root can read the admin
+# one. Without this the checks below fail for lack of credentials and look like
+# a missing namespace.
+if [ -z "${KUBECONFIG:-}" ] && [ "$(id -u)" -eq 0 ] && [ -r /etc/kubernetes/admin.conf ]; then
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+fi
+
+if ! kubectl get --raw=/healthz >/dev/null 2>&1; then
+  echo "Error: kubectl cannot reach the cluster (KUBECONFIG=${KUBECONFIG:-unset})" >&2
+  exit 1
+fi
+
 read_env() {
   local val
   val=$(grep -E "^${1}=" "$ENV_FILE" | tail -1 | cut -d= -f2-)
@@ -32,5 +44,5 @@ echo "==> cert-manager"
 if kubectl get namespace cert-manager >/dev/null 2>&1; then
   read_env CF_API_TOKEN | put_secret cert-manager cloudflare-api-token api-token
 else
-  echo "  skipped: namespace cert-manager does not exist yet"
+  echo "  skipped: namespace cert-manager does not exist" >&2
 fi
