@@ -173,6 +173,13 @@ node: kubeadm adds it to every control plane and announcement implementations
 skip a node that carries it, so on a single node no LoadBalancer address would
 ever appear (PM-0005). Check it again after every `kubeadm upgrade`.
 
+**A `ResourceQuota` is sized for a rolling update, not for the steady state.**
+A Deployment's new pod starts before the old one goes away, so the namespace
+briefly holds twice the pods. A quota that fits only one blocks its own
+rollout: the new ReplicaSet never creates a pod, the old one keeps its
+replica, and the stale pod is what `kubectl get pods` keeps showing. Deleting
+that pod changes nothing, because the old ReplicaSet recreates it.
+
 **Every namespace is created with four things, not one.** Pod Security
 Standards at `restricted`, a default-deny NetworkPolicy, a `ResourceQuota` and a
 `LimitRange`, all from day one, because Cilium makes the policy cheap and
