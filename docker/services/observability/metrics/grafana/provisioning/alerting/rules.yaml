@@ -767,6 +767,45 @@ groups:
             shortname: HEALTHCHECKS
           isPaused: false
 
+        - uid: seireitei-etcd-slow-fsync
+          title: etcd WAL fsync is slow (seireitei)
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket{cluster="seireitei"}[5m])) by (le))
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 0.1
+                        type: gt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 5m
+          annotations:
+            summary: 'etcd p99 WAL fsync above 100ms for 5 minutes on seireitei. PM-0010: a Restic backup reading /opt at 400 MB/s pushed this to 8192ms and put the control plane into a 15-hour restart loop. Four hours of this metric preceded the first visible symptom and nothing was watching it. Check what is reading the NVMe before touching the cluster. noData is Alerting on purpose: the scrape comes from outside the cluster, so silence means etcd stopped answering.'
+          labels:
+            severity: critical
+            shortname: SEIREITEI
+            host: urahara
+          isPaused: false
+
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
 # (known, documented bug; X-Disable-Provenance does not work for deleting via

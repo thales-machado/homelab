@@ -157,6 +157,14 @@ scrape_configs:
         labels:
           host: urahara
 
+  # seireitei's etcd, scraped from outside the cluster on purpose (PM-0010).
+  - job_name: "etcd-seireitei"
+    static_configs:
+      - targets: ["192.168.15.215:2381"]
+        labels:
+          host: urahara
+          cluster: seireitei
+
   - job_name: "blackbox-exporter"
     metrics_path: /probe
     params:

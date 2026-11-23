@@ -58,3 +58,10 @@
 /source/opt/apps/wolf/profile-data/*/*/.config/retroarch/database/*
 /source/opt/apps/wolf/profile-data/*/*/.config/retroarch/thumbnails/*
 /source/opt/apps/wolf/profile-data/*/*/.config/retroarch/downloads/*
+
+# seireitei: the cluster's local storage root on the host. CloudNativePG and
+# Velero write their own data to S3, so Restic walking this would be a second
+# copy of data that is already backed up, paid for with the exact I/O that
+# starved etcd in PM-0010. /var/lib/etcd is already out of scope: Restic only
+# reads /opt and /etc.
+/source/opt/seireitei/*

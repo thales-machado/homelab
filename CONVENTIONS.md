@@ -121,6 +121,63 @@ Each fragment `docker/services/<category>/<service>/<service>.yaml` is self-cont
   2. `bind: propagation: rslave` on the consumer's volume. A default (`rprivate`) bind mount only sees what was mounted when the consumer started; if rclone later remounts, the consumer silently keeps an empty directory.
   Even with both, force-recreating `rclone` orphans file handles open at that moment; restart the consumer right after.
 
+## Kubernetes: seireitei
+
+One control-plane node, `urahara`, kubeadm on the 1.37 line, built 2026-11-23.
+The reasoning lives in `docs/kubernetes-platform.md`; this section is the part
+an operator needs at the keyboard.
+
+`k8s/cluster/kubeadm-config.yaml` is the source of truth, and the phases that
+apply it are idempotent: `kubeadm init phase etcd local --config <file>`
+rewrites the static Pod manifest, `kubeadm init phase upload-config kubeadm
+--config <file>` updates the in-cluster `kubeadm-config` ConfigMap that
+`kubeadm upgrade` reads later. Changing only the manifest means the next
+upgrade silently reverts it. Run the second phase after the first has settled:
+rewriting the etcd manifest restarts etcd, and the upload phase fails with
+`context deadline exceeded` if it runs while the API server has no etcd.
+
+The file carries no leading `---`. kubeadm splits on the separator and a
+comment-only first document fails with "kind and apiVersion is mandatory".
+`extraArgs` is a list of `name`/`value` pairs in `v1beta4`, not a map.
+
+**The CRI is the host's own containerd**, shared with the ~40 Docker
+containers, with the CRI plugin already enabled and `SystemdCgroup` already
+true. The namespaces (`moby` and `k8s.io`) do not mix, and restarting
+containerd drops no container, because running containers are children of
+`containerd-shim` rather than of the daemon. A dedicated runtime was weighed
+and rejected: it would be a bespoke unit no documentation covers, and this
+repo's own postmortems are mostly about bespoke pieces breaking later.
+
+**`systemReserved` carries the Docker containers.** The kubelet cannot see
+them, so without it the scheduler believes the whole 28 GiB is free and fills
+the host until the OOM killer picks a victim, which could be Pi-hole or
+Traefik. With `kubeReserved` 2Gi, `systemReserved` 14Gi and eviction at 1Gi,
+allocatable lands at 11.2 GiB of 28.2 GiB.
+
+**etcd metrics are scraped from outside the cluster**, by VictoriaMetrics on
+zangetsu, job `etcd-seireitei` against `192.168.15.215:2381`. Port 2381 is the
+unauthenticated metrics listener, not the client port 2379, and it is bound to
+the host IP rather than `0.0.0.0`. The `seireitei-etcd-slow-fsync` rule has
+`noDataState: Alerting` for that reason: silence means etcd stopped answering.
+`/source/opt/seireitei/*` is excluded in `scripts/backup/restic-excludes.txt`,
+and the `--device-read-bps` cap on the Restic DAG stays (PM-0010).
+
+**Cilium replaces kube-proxy**, which `kubeadm init` skips via `skipPhases`.
+`k8sServiceHost`/`k8sServicePort` are mandatory in the values: without them the
+agent cannot reach the API server, because the ClusterIP it would use is the
+service it has not provided yet. LoadBalancer addresses come from
+`192.168.15.240/29` with `allowFirstLastIPs: "No"`, so the usable range is
+`.241`-`.246`. The L2 announcement policy matches `^eth0$`, the LAN interface.
+`node.kubernetes.io/exclude-from-external-load-balancers` is removed from the
+node: kubeadm adds it to every control plane and announcement implementations
+skip a node that carries it, so on a single node no LoadBalancer address would
+ever appear (PM-0005). Check it again after every `kubeadm upgrade`.
+
+**A LoadBalancer address does not answer ICMP.** Cilium answers ARP for it and
+forwards only the ports the Service declares, so `ping` to `.241`-`.246` fails
+by design. Monitoring a cluster service with an ICMP check creates a permanent
+false alert.
+
 ## Observability
 
 Metrics: VictoriaMetrics (Prometheus-compatible, viewed through Grafana). Logs: Grafana Alloy (River syntax, not YAML) → Loki, 15-day retention.
