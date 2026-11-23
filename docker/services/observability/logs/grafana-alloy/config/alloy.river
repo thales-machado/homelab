@@ -35,3 +35,51 @@ loki.write "default" {
     url = sys.env("LOKI_URL")
   }
 }
+
+// Kubernetes pod logs (urahara only). The cluster's containers belong to
+// containerd's k8s.io namespace, so the Docker discovery above cannot see them,
+// but their logs are plain files. On a host without /var/log/pods this matches
+// nothing and costs nothing.
+local.file_match "pods" {
+  path_targets = [{ __path__ = "/var/log/pods/*/*/*.log" }]
+}
+
+// Labels come from the path, /var/log/pods/<ns>_<pod>_<uid>/<container>/N.log.
+// Relabel rather than a pipeline stage: one rule, one label, no guessing about
+// what the extracted map holds.
+discovery.relabel "pods" {
+  targets = local.file_match.pods.targets
+
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/log/pods/([^_]+)_.+/[^/]+/[0-9]+\\.log"
+    target_label  = "namespace"
+  }
+
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/log/pods/[^_]+_(.+)_[^_]+/[^/]+/[0-9]+\\.log"
+    target_label  = "pod"
+  }
+
+  rule {
+    source_labels = ["__path__"]
+    regex         = "/var/log/pods/[^/]+/([^/]+)/[0-9]+\\.log"
+    target_label  = "container"
+  }
+
+  rule {
+    target_label = "host"
+    replacement  = sys.env("HOSTNAME_LABEL")
+  }
+
+  rule {
+    target_label = "cluster"
+    replacement  = "seireitei"
+  }
+}
+
+loki.source.file "pods" {
+  targets    = discovery.relabel.pods.output
+  forward_to = [loki.write.default.receiver]
+}

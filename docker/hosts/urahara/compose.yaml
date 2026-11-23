@@ -24,6 +24,7 @@ include:
   - ../../services/media-player/sync/rclone/rclone.yaml
   - ../../services/media-player/wolf/wolf.yaml
   - ../../services/observability/logs/grafana-alloy/grafana-alloy.yaml
+  - alloy-k8s-logs.yaml
   - ../../services/observability/metrics/exporters/cadvisor/cadvisor.yaml
   - ../../services/observability/metrics/exporters/node-exporter/node-exporter.yaml
   - ../../services/observability/metrics/exporters/redis-exporter/redis-exporter-urahara.yaml

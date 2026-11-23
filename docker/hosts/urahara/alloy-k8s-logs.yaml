@@ -1,0 +1,6 @@
+# urahara only: seireitei's container logs are files on disk, not Docker
+# containers. See "Kubernetes: seireitei" in CONVENTIONS.md.
+services:
+  grafana-alloy:
+    volumes:
+      - /var/log/pods:/var/log/pods:ro
