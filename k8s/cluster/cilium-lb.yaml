@@ -1,0 +1,27 @@
+# LoadBalancer addressing for seireitei. apiVersions differ on purpose: the pool
+# graduated to v2, the L2 policy is still v2alpha1 in Cilium 1.20.
+# Apply: kubectl apply -f k8s/cluster/cilium-lb.yaml
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: lan
+spec:
+  blocks:
+    - cidr: 192.168.15.240/29
+  # skips .240 and .247, so the pool hands out .241-.246. Six is more than
+  # enough with Gateway API in front, and it keeps .240 free while the TV
+  # still holds it. See "LAN addressing" in CONVENTIONS.md.
+  allowFirstLastIPs: "No"
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: lan
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: urahara
+  interfaces:
+    - ^eth0$
+  externalIPs: true
+  loadBalancerIPs: true

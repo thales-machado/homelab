@@ -1,8 +1,8 @@
 # Cilium for seireitei: CNI, kube-proxy replacement and L2 announcements.
 # Install: helm install cilium cilium/cilium --version <v> -n kube-system \
 #            -f k8s/cluster/cilium-values.yaml
-# Version is checked at install time (helm search repo cilium/cilium --versions),
-# not taken from this file's history.
+# Chart 1.20.5, installed 2026-11-23. Check for a newer one at upgrade time
+# (helm search repo cilium/cilium --versions) rather than reusing this number.
 
 # kube-proxy was skipped at kubeadm init, so Cilium has to carry service routing.
 # Without k8sServiceHost/Port the agent cannot reach the API server: the
