@@ -173,6 +173,50 @@ node: kubeadm adds it to every control plane and announcement implementations
 skip a node that carries it, so on a single node no LoadBalancer address would
 ever appear (PM-0005). Check it again after every `kubeadm upgrade`.
 
+**Every namespace is created with four things, not one.** Pod Security
+Standards at `restricted`, a default-deny NetworkPolicy, a `ResourceQuota` and a
+`LimitRange`, all from day one, because Cilium makes the policy cheap and
+retrofitting any of them onto a running application is what makes people skip
+it.
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: <app>
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: <app>}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-dns, namespace: <app>}
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+```
+
+`allow-dns` is not optional and not a detail: a default-deny Egress policy blocks
+port 53 as well, so without it every pod in the namespace resolves nothing and
+the failure looks like the application being broken rather than the policy. Add
+it in the same commit as the deny, never after.
+
 **A LoadBalancer address does not answer ICMP.** Cilium answers ARP for it and
 forwards only the ports the Service declares, so `ping` to `.241`-`.246` fails
 by design. Monitoring a cluster service with an ICMP check creates a permanent

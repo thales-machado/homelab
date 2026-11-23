@@ -90,3 +90,26 @@ network delay in CONVENTIONS) and what retries them today.
 It landed on `main` as `Generating commit message...`, the IDE's temporary text.
 Fixing it means rewriting published history, which this repo deliberately does
 not do. Left as is unless the public history matters more than the rule.
+
+## Alert review, after the first application (2026-11-23)
+
+Agreed while building `seireitei`: review every alert once something real runs
+on it. Three items came out of the build itself and have nowhere else to live.
+
+**Pi-hole HA now hides a dead Pi-hole.** The keepalived track script moves the
+VIP in about 15 seconds, so a failed Pi-hole stops being visible at all until
+the second one also dies. A Grafana rule over the log Alloy already collects
+closes it: `{container="keepalived"} |= "Entering FAULT STATE"`. Few lines, and
+it reuses the contact point that already exists.
+
+**Control-plane restarts are not watched.** `kube-apiserver-urahara` reached 14
+restarts in the first 12 seconds after `kubeadm init`, while etcd was still
+coming up, and then stayed at 14. Benign on that day, but PM-0010 was exactly a
+control plane in a restart loop and nothing was looking. The lab had
+`k8s-lab-control-plane-restart`; `seireitei` has no equivalent yet.
+
+**Do not probe a LoadBalancer address with ICMP.** Cilium answers ARP for
+`.241`-`.246` and forwards only the ports the Service declares, so `ping` fails
+by design. Confirmed in production on 2026-11-23: HTTP 200 and 100% packet loss
+at the same instant. An Uptime Kuma ping check against a cluster service would
+be a permanent false alert.

@@ -380,8 +380,15 @@ hand-written masquerade rule, and nftables colliding with Tailscale.
 3. ~~Test Debian's arm64 kernel on zangetsu.~~ Answered above: it does not
    migrate and does not join the cluster.
 4. ~~Write the platform ADR, knowing the answer to step 3.~~ Done: above.
-5. Tear down the lab cluster (step 5a above) and build `seireitei`.
+5. ~~Tear down the lab cluster (step 5a above) and build `seireitei`.~~ Done
+   2026-11-23: kubeadm v1.37.2 on urahara, Cilium 1.20.5 with kube-proxy
+   replacement and L2 announcements, allocatable at 11.2 GiB of 28.2 GiB,
+   etcd scraped from zangetsu with the fsync alert live at a 2 ms baseline,
+   the `thalespm.me` stub zone in place and PodSecurity `restricted`
+   verified by a rejected pod.
 6. First application.
+7. Review every alert, the cluster's included, plus the two carried over
+   from building it (see `docs/backlog.md`).
 
 ## Carried over from the lab
 
