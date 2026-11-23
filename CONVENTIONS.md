@@ -173,6 +173,23 @@ node: kubeadm adds it to every control plane and announcement implementations
 skip a node that carries it, so on a single node no LoadBalancer address would
 ever appear (PM-0005). Check it again after every `kubeadm upgrade`.
 
+**Traffic from the Gateway arrives as `reserved:ingress`, not as `host`.**
+Cilium's Envoy runs in the host network, so its pod carries the node's address
+and looks like the host, but the identity it presents to a backend is the
+reserved `ingress` one. A namespace policy that allows only `host` passes the
+kubelet's probes, passes a `curl` from the node, and silently drops every
+request from the Gateway: Envoy answers 503 with `connection timeout` and
+`cilium-dbg envoy admin clusters` shows the right endpoint with
+`cx_connect_fail` equal to `cx_total`. Ingress rules need `host` for probes and
+`ingress` for the Gateway.
+
+**`fromEndpoints: [{}]` in a CiliumNetworkPolicy is allow-all, not
+same-namespace.** An empty selector matches every endpoint, and the policy map
+shows `match all` in `cilium-dbg monitor --type policy-verdict`. To mean the
+namespace, say so: `matchLabels: {io.kubernetes.pod.namespace: <ns>}`. The
+argocd policy carried that mistake from 2026-11-23 and was the only reason the
+Gateway reached it at all.
+
 **A `ResourceQuota` is sized for a rolling update, not for the steady state.**
 A Deployment's new pod starts before the old one goes away, so the namespace
 briefly holds twice the pods. A quota that fits only one blocks its own
