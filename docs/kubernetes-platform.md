@@ -85,6 +85,17 @@ unsealing, backup, and becomes another bootstrap dependency.
 Docker keeps `.env` on the host as today. Encrypting those into `.env.enc` in
 Git is an idea recorded for later, deliberately not bundled with this work.
 
+**Amended 2026-11-23.** SOPS is the destination, not the starting point. The
+cluster's first secret is one value, the Cloudflare token cert-manager needs for
+DNS-01, and `scripts/setup/setup-k8s-secrets.sh` creates it from the host's
+`.env`, which is already where every Docker secret lives and is already backed
+up. Choosing between SOPS, Vault and External Secrets on a sample of one would
+be choosing from reading rather than from need. The switching cost is what makes
+this safe: the `Secret` object in the cluster is identical whichever way it
+arrives, so replacing the mechanism later changes one script and no application.
+The trigger is the second wave, where CloudNativePG brings one credential per
+application and the count goes from one to many.
+
 **Image updates.** Argo CD Image Updater, with `write-back-method: git`, which
 needs a write credential and a tag convention. Watchtower does not work for
 Kubernetes, and without this the cluster's applications would silently age

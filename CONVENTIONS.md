@@ -217,6 +217,14 @@ port 53 as well, so without it every pod in the namespace resolves nothing and
 the failure looks like the application being broken rather than the policy. Add
 it in the same commit as the deny, never after.
 
+**Gateway API CRDs go in before Cilium's `gatewayAPI.enabled`.** The chart only
+renders the `GatewayClass` when the CRD already exists at template time, so
+enabling the feature first leaves `enable-gateway-api: true` in `cilium-config`,
+no `GatewayClass`, no error anywhere, and nothing working. Cilium 1.20.5 expects
+Gateway API v1.6.3 (standard channel); a version mismatch fails the operator on
+a kube-proxy-free cluster, which this one is. Order: CRDs, then `helm upgrade`,
+then restart `cilium-operator` and the `cilium` DaemonSet.
+
 **A LoadBalancer address does not answer ICMP.** Cilium answers ARP for it and
 forwards only the ports the Service declares, so `ping` to `.241`-`.246` fails
 by design. Monitoring a cluster service with an ICMP check creates a permanent
