@@ -217,6 +217,21 @@ port 53 as well, so without it every pod in the namespace resolves nothing and
 the failure looks like the application being broken rather than the policy. Add
 it in the same commit as the deny, never after.
 
+**Cluster logs reach Loki through the Alloy that already runs on the host.**
+seireitei's containers belong to containerd's `k8s.io` namespace, so Alloy's
+Docker discovery cannot see them, but their logs are files under
+`/var/log/pods/<ns>_<pod>_<uid>/<container>/N.log`. `local.file_match` plus
+`discovery.relabel` on `__path__` gives namespace, pod and container; what is
+lost is enrichment from pod labels and annotations, which would need the
+Kubernetes API. The bind mount is a per-host override on urahara, and the block
+matches nothing on a host without that directory.
+
+Alloy keeps its read positions in `--storage.path`, bind-mounted to
+`/opt/apps/grafana-alloy`. Without it every recreation re-reads every log from
+the beginning and Loki rejects whatever is past its retention window with 400,
+dropping the whole batch. That was the state until 2026-11-23, so every
+Watchtower update of Alloy replayed the full history.
+
 **Argo CD's login comes from the host's `.env`, not from Git.** The built-in
 `admin` account cannot be renamed, so `scripts/setup/setup-k8s-secrets.sh`
 creates a local account named `ADMIN_USER` and sets the same bcrypt password on

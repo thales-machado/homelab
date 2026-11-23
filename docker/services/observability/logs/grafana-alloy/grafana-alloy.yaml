@@ -9,13 +9,16 @@ services:
     volumes:
       - ./config/alloy.river:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # read positions. Without it every recreation re-reads every log from the
+      # start, and Loki answers 400 for everything past its retention window.
+      - /opt/apps/grafana-alloy:/var/lib/alloy
     env_file:
       - ${HOMELAB_ENV}
     environment:
       - TZ=${TZ}
       - LOKI_URL=${LOKI_URL:-http://loki:3100/loki/api/v1/push}
       - HOSTNAME_LABEL=${HOSTNAME_LABEL:-zangetsu}
-    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy /etc/alloy/config.alloy
     networks:
       - cloudflare-net
     labels:
