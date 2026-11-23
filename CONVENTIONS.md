@@ -217,6 +217,15 @@ port 53 as well, so without it every pod in the namespace resolves nothing and
 the failure looks like the application being broken rather than the policy. Add
 it in the same commit as the deny, never after.
 
+**Argo CD's login comes from the host's `.env`, not from Git.** The built-in
+`admin` account cannot be renamed, so `scripts/setup/setup-k8s-secrets.sh`
+creates a local account named `ADMIN_USER` and sets the same bcrypt password on
+both. A local account can log in but has no rights until RBAC grants them, so
+the script also writes `policy.csv`. It patches `argocd-cm` and `argocd-rbac-cm`
+in place, which a `helm upgrade` of the chart rewrites: rerun the script after
+one. Keeping the account name out of the repository is deliberate, since the
+repository is public and that name is reused across the homelab.
+
 **cert-manager's DNS-01 self-check must bypass the cluster's own DNS.** The
 `thalespm.me` stub zone sends every lookup to Pi-hole, whose split-horizon view
 breaks authoritative-nameserver discovery, so a challenge sits in

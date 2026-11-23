@@ -46,3 +46,37 @@ if kubectl get namespace cert-manager >/dev/null 2>&1; then
 else
   echo "  skipped: namespace cert-manager does not exist" >&2
 fi
+
+echo "==> argocd"
+if kubectl get namespace argocd >/dev/null 2>&1; then
+  command -v htpasswd >/dev/null 2>&1 \
+    || { echo "  Error: htpasswd not found (apache2-utils)" >&2; exit 1; }
+
+  user=$(read_env ADMIN_USER)
+  pass=$(read_env ADMIN_PASSWORD)
+  # password over stdin, never argv. $2y is what htpasswd emits and what Go's
+  # bcrypt refuses, so Argo needs it rewritten to $2a.
+  hash=$(printf '%s\n' "$pass" | htpasswd -niBC 10 "" | tr -d ':\n')
+  hash=${hash/'$2y'/'$2a'}
+  unset pass
+  mtime=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  # merge patch, not apply: apply would drop server.secretkey and log everyone out
+  kubectl -n argocd patch secret argocd-secret --type merge -p "{\"stringData\":{
+    \"admin.password\": \"${hash}\",
+    \"admin.passwordMtime\": \"${mtime}\",
+    \"accounts.${user}.password\": \"${hash}\",
+    \"accounts.${user}.passwordMtime\": \"${mtime}\"}}" >/dev/null
+
+  # a local account can log in but has no rights until RBAC grants them
+  kubectl -n argocd patch configmap argocd-cm --type merge \
+    -p "{\"data\":{\"accounts.${user}\":\"apiKey,login\"}}" >/dev/null
+  kubectl -n argocd patch configmap argocd-rbac-cm --type merge \
+    -p "{\"data\":{\"policy.csv\":\"g, ${user}, role:admin\"}}" >/dev/null
+
+  echo "  ok  argocd/local account + password"
+  echo "  note: a helm upgrade of the argo-cd chart rewrites argocd-cm and"
+  echo "        argocd-rbac-cm. Rerun this script after one."
+else
+  echo "  skipped: namespace argocd does not exist" >&2
+fi
