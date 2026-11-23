@@ -1,0 +1,77 @@
+# The argocd namespace, hardened to the standard in CONVENTIONS.md. Applied by
+# hand, never by Argo: a policy that breaks Argo cannot be fixed by Argo.
+# Apply: kubectl apply -f k8s/argocd/namespace.yaml
+# Rollback: kubectl -n argocd delete cnp argocd
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+# LimitRange before the quota: a quota on requests rejects any pod that sets
+# none, and the chart leaves some components without them.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: argocd
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 25m
+        memory: 64Mi
+      default:
+        memory: 256Mi
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: budget
+  namespace: argocd
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1536Mi
+    limits.memory: 3Gi
+---
+# CiliumNetworkPolicy rather than NetworkPolicy: Argo needs the API server and
+# the public internet, which the kube-apiserver and world entities express and
+# ipBlock does not.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+    # kubelet probes and port-forward arrive from the host.
+    - fromEntities:
+        - host
+  egress:
+    - toEndpoints:
+        - {}
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEntities:
+        - kube-apiserver
+    # github.com and the Helm repositories.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
