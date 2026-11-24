@@ -313,6 +313,26 @@ but a hostname being migrated must have its DockFlare labels removed first and
 only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
 `thalesmachado.net` left the DockFlare apex untouched, still with no comment.
 
+**Moving a Docker service to the cluster, in order.** Done three times on
+2026-11-23/24 (the site, openspeedtest, it-tools) and the steps are stable.
+Publish in the cluster first and leave DNS pointing at Traefik: the hostname is
+the same on both paths, so Pi-hole alone decides who serves and the cutover has
+no window. Verify with `curl --resolve <host>:443:192.168.15.241` before
+touching anything else. Then, in one commit: the Pi-hole record moves to
+`.241`, the `cross-host.yml` router and service go, and the line leaves the
+host's `include:`. A deploy does not remove the container (no
+`--remove-orphans`), so `docker rm -f` it by hand. Homepage keeps its entry but
+loses `server:`/`container:`, which read container status from the Docker
+socket and would report the service down forever; Homepage mounts from
+`/opt/apps`, so that change needs `homelab-cp` before the restart. A public
+hostname additionally waits for DockFlare's rule to be expired by hand.
+
+**A namespace label reaches the Gateway on a sync, not a refresh.** A route in
+a namespace that does not yet carry `cfgate-routes: "true"` is rejected with
+`NotAllowedByListeners`, and `argocd.argoproj.io/refresh=hard` does not
+re-evaluate it - the stale condition stays. Force a sync of that app instead.
+This cost time twice in one evening before being written down.
+
 **`pids_limit` on an agent scales with the host, not with the service.**
 Komodo Periphery collects stats from every container every 30 seconds and runs
 `docker compose` over the whole stack on deploy, so its thread use grows as

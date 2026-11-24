@@ -153,3 +153,19 @@ Recovery used on zangetsu, straight from `docs/komodo.md`: `sudo chown -R
 keydrop:keydrop /opt/homelab`, then `git fetch && git reset --hard
 origin/main`. Periphery writes as root, so the ownership drifts back on the
 next deploy; that is expected, not a fix to repeat preemptively.
+
+## The OpenSpeedTest page never finishes loading (2026-11-24)
+
+Pre-existing, not caused by the move to the cluster: the same page was already
+spinning while the service ran in Docker behind Traefik. Server and network are
+both ruled out. Against the pod directly and through the Gateway, `/`,
+`/downloading` (30 MB) and `/upload` (10 MB) all answer 200, the last in 8 ms.
+The header and footer render and the middle spins, which is the app's own
+JavaScript failing to initialise.
+
+That leaves the browser or something the page fetches and cannot reach - a
+likely candidate in this network is an external resource Pi-hole blocks, with
+the script waiting on it. The next step is one look at the Network tab while
+reloading, to see which request hangs. The container also logs
+`crond: Operation not permitted` under the dropped capabilities, which looks
+unrelated but has not been ruled out.
