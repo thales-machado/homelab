@@ -263,17 +263,22 @@ def find_monitor(api, name):
     return next((m for m in list_monitors_db() if m.get("name") == name), None)
 
 
-def reconcile_existing(api, monitor, group_id, notification_id):
-    """Re-check parent and notification of an existing monitor. The
+def reconcile_existing(api, monitor, group_id, notification_id, url=None):
+    """Re-check parent, notification and URL of an existing monitor. The
     notification's isDefault is only applied by the UI, so a monitor created
-    through the API without notificationIDList gets no alerts. Idempotent."""
-    changes = pending_changes(monitor["id"], group_id, notification_id)
+    through the API without notificationIDList gets no alerts. Idempotent.
+
+    URL matters because a service that moves keeps its name: when openspeedtest
+    and it-tools went to the cluster on 2026-11-23 this script skipped both as
+    "Exists" and left them pointing at Docker endpoints that no longer existed,
+    which is a monitoring gap that reports itself as a healthy monitor."""
+    changes = pending_changes(monitor["id"], group_id, notification_id, url)
     if not changes:
         print(f"  ⏭️  Exists: {monitor['name']}")
         return
     for _ in range(3):
         mutate(api.edit_monitor, monitor["id"], **changes)
-        remaining = pending_changes(monitor["id"], group_id, notification_id)
+        remaining = pending_changes(monitor["id"], group_id, notification_id, url)
         if not remaining:
             print(f"  🔧 Fixed: {monitor['name']} → {', '.join(changes)}")
             return
@@ -281,13 +286,17 @@ def reconcile_existing(api, monitor, group_id, notification_id):
     print(f"  ⚠️  Not applied: {monitor['name']} → {', '.join(changes)} (run the script again)")
 
 
-def pending_changes(monitor_id, group_id, notification_id):
+def pending_changes(monitor_id, group_id, notification_id, url=None):
     monitor = next(m for m in list_monitors_db() if m["id"] == monitor_id)
     changes = {}
     if group_id and monitor.get("parent") != group_id:
         changes["parent"] = group_id
     if notification_id not in monitor_notification_ids(monitor_id):
         changes["notificationIDList"] = [notification_id]
+    # Only HTTP monitors carry a url; tcp and dns ones describe the target in
+    # hostname/port fields that this reconcile does not touch.
+    if url and monitor.get("type") in ("http", "keyword") and monitor.get("url") != url:
+        changes["url"] = url
     return changes
 
 
@@ -369,7 +378,10 @@ def main():
 
         existing_monitor = find_monitor(api, name)
         if existing_monitor:
-            reconcile_existing(api, existing_monitor, groups.get(group), notification_id)
+            reconcile_existing(
+                api, existing_monitor, groups.get(group), notification_id,
+                url if tcp_port is None and dns_server is None else None,
+            )
             skipped += 1
             continue
 
