@@ -327,9 +327,12 @@ anyone looked. The repair is to strip the quotes from the record's content,
 which `status.records[].status` and the ownership TXT read through the API will
 confirm; enumerate every `_cfgate.*` record rather than the ones you remember,
 since the dashboard marks the healthy, unquoted ones with a warning icon and
-leaves the broken one unmarked. The fix is upstream in
-`thales-machado/cfgate@fix/txt-content-quoting`; until it is merged and
-released, the dashboard stays read-only for these records.
+leaves the broken one unmarked. The fix is upstream in cfgate/cfgate#117, which
+also makes cfgate write the quoted form so the warning stops appearing on new
+records. The rule here lifts only when an official image carrying it is
+actually running: merged is not released, and released still needs the chart
+version in `k8s/argocd/applications/cfgate.yaml` to move off 1.10.0. Until
+then the dashboard stays read-only for these records.
 
 **Moving a Docker service to the cluster, in order.** Done three times on
 2026-11-23/24 (the site, openspeedtest, it-tools) and the steps are stable.
