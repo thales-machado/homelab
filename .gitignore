@@ -24,6 +24,10 @@
 *.tfstate
 *.tfstate.*
 *.tfvars
+# The lock records a hash per platform and both modules run from one host
+# through tf(), so versioning it would buy reproducibility we already get from
+# the version constraints, at the cost of regenerating it per architecture.
+**/.terraform.lock.hcl
 tfplan
 *.tfplan
 
