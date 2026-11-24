@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: cfgate-edge
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 10m
+        memory: 64Mi
+      default:
+        memory: 192Mi
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: budget
+  namespace: cfgate-edge
+spec:
+  # Sized for three connectors plus two canaries, not two plus one: a rolling
+  # update runs a surge pod, and a steady-state quota would block the rollout
+  # it is meant to bound.
+  hard:
+    requests.cpu: 200m
+    requests.memory: 320Mi
+    limits.memory: 768Mi

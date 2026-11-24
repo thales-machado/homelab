@@ -1,0 +1,27 @@
+apiVersion: cfgate.io/v1alpha1
+kind: CloudflareDNS
+metadata:
+  name: seireitei
+  namespace: cfgate-edge
+spec:
+  tunnelRef:
+    name: seireitei
+  # Only this zone, even though the token reaches both: thalespm.me is where
+  # DockFlare keeps the homelab's whole public surface, and an undeclared zone
+  # is never read.
+  zones:
+    - name: thalesmachado.net
+  source:
+    gatewayRoutes:
+      enabled: true
+      # matchNames, not labels: alpha.11 requires label presence even for an
+      # empty value, so explicit names fail loudly instead of silently wide.
+      namespaceSelector:
+        matchNames:
+          - cfgate-edge
+  defaults:
+    # A tunnel CNAME only works proxied.
+    proxied: true
+  cleanupPolicy:
+    deleteOnRouteRemoval: true
+    deleteOnResourceRemoval: true

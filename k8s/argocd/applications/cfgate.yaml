@@ -1,0 +1,35 @@
+# Cloudflare tunnel controller, Gateway API native: the public edge for cluster
+# apps. Still alpha upstream, which is why the first hostname it serves is a
+# disposable one and the site keeps its Docker fallback.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cfgate
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: homelab
+  source:
+    # OCI Helm: the oci:// scheme carries the chart path, "path" is always "."
+    # and there is no "chart" field on this form.
+    repoURL: oci://ghcr.io/cfgate/charts/cfgate
+    path: .
+    # Chart 1.10.0 is the pair for cfgate 0.2.0-alpha.11. It pins Gateway API
+    # 1.6.2 for validation while this cluster runs 1.6.3 for Cilium; the bundle
+    # stays where Cilium needs it.
+    targetRevision: 1.10.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cfgate-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: latest

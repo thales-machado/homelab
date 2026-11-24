@@ -1,0 +1,32 @@
+# Public edge for cluster apps, through a Cloudflare tunnel. The LAN edge stays
+# with Cilium (Gateway "lan"); an app that is both gets two HTTPRoutes, one per
+# parent, which is the same resource kind on both paths.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: cfgate
+spec:
+  controllerName: cfgate.io/cloudflare-tunnel-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: cfgate-edge
+  annotations:
+    cfgate.io/tunnel-ref: cfgate-edge/seireitei
+spec:
+  gatewayClassName: cfgate
+  listeners:
+    # No hostname on purpose: the listener accepts any, and each HTTPRoute
+    # declares its own. Pinning it here would mean editing the Gateway for
+    # every new public hostname, and a wildcard would still exclude the apex.
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              cfgate-routes: "true"

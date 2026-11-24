@@ -1,0 +1,95 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cfgate-edge
+  namespace: cfgate-edge
+spec:
+  endpointSelector: {}
+  ingress:
+    # cloudflared shares one listener for metrics, probes and diagnostics on
+    # 44483; the probes arrive as host, and so does the canary's.
+    - fromEntities:
+        - host
+    # The connector reaching the canary. Explicit labels: fromEndpoints [{}]
+    # is allow-all here, not same-namespace.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cfgate-edge
+            app.kubernetes.io/name: cloudflared
+            app.kubernetes.io/managed-by: cfgate
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    # The tunnel itself: 7844 needs TCP and UDP, because protocol "auto" tries
+    # QUIC first and falls back to http2. Blocking UDP alone costs a retry
+    # cycle on every connector start.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "7844"
+              protocol: TCP
+            - port: "7844"
+              protocol: UDP
+    # 443 is optional for the tunnel, required for the API calls cloudflared
+    # makes around it; without it the connector logs errors but still runs.
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+    # The only origin so far is the canary, in this namespace. An app in its
+    # own namespace gets its own rule when its public route is created.
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cfgate-edge
+            app: canary
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cfgate
+  namespace: cfgate-system
+spec:
+  endpointSelector: {}
+  ingress:
+    # kubelet probes, and the metrics scrape from outside the cluster.
+    - fromEntities:
+        - host
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEntities:
+        - kube-apiserver
+    # api.cloudflare.com
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

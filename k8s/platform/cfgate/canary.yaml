@@ -1,0 +1,95 @@
+# Permanent public canary: a fixed string with no application behind it. A check
+# against this hostname separates "the public path is down" from "the app is
+# down", which a check against a real app cannot do. It is also the validation
+# target for cfgate itself, so a first failure has only one possible cause.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: canary
+  namespace: cfgate-edge
+data:
+  index.html: |
+    cfgate canary ok
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: canary
+  namespace: cfgate-edge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: canary
+  template:
+    metadata:
+      labels:
+        app: canary
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        # The site's image, already proven under PSS restricted on this
+        # cluster: UID 101 on 8080, so no root and no privileged port.
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: page
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 48Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+      volumes:
+        - name: page
+          configMap:
+            name: canary
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: canary
+  namespace: cfgate-edge
+spec:
+  selector:
+    app: canary
+  ports:
+    - name: http
+      port: 80
+      # numeric, like the site's Service: a named targetPort does not survive
+      # every path that reaches a Service on this cluster
+      targetPort: 8080
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: canary
+  namespace: cfgate-edge
+spec:
+  parentRefs:
+    - name: public
+      sectionName: http
+  hostnames:
+    - cfgate.thalesmachado.net
+  rules:
+    - backendRefs:
+        - name: canary
+          port: 80

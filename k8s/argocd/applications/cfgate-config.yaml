@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cfgate-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/thales-machado/homelab
+    targetRevision: main
+    path: k8s/platform/cfgate
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cfgate-edge
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    managedNamespaceMetadata:
+      labels:
+        # the public Gateway's allowedRoutes selector
+        cfgate-routes: "true"
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: latest

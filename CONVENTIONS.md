@@ -294,6 +294,49 @@ forwards only the ports the Service declares, so `ping` to `.241`-`.246` fails
 by design. Monitoring a cluster service with an ICMP check creates a permanent
 false alert.
 
+**Public exposure is cfgate, LAN exposure is Cilium.** An app that needs both
+gets two `HTTPRoute`s, one per parent Gateway (`lan` in `gateway`, `public` in
+`cfgate-edge`) - same resource kind on both paths, which is why Gateway API was
+worth standardising on. A namespace opts in to the public Gateway with the
+label `cfgate-routes: "true"`, set in its Argo `managedNamespaceMetadata`.
+
+**`cfgate.thalesmachado.net` is a canary, not a test leftover.** It serves a
+fixed string from `cfgate-edge` with no application behind it, so a check on it
+reports the public path alone. Without it, one failing check cannot say whether
+the tunnel or the app broke. It is also where a cfgate change is tried before
+any real hostname.
+
+**One writer per public hostname: DockFlare or cfgate, never both.** Cloudflare's
+DNS API has no conditional write, so a TXT ownership marker is not a lock. cfgate
+refuses to touch a record it does not own, which is what makes coexistence safe,
+but a hostname being migrated must have its DockFlare labels removed first and
+only then be adopted.
+
+**`CloudflareDNS.spec.zones` lists one zone per route that exists.** An
+undeclared zone is never read, and that is the containment while the controller
+is alpha - the shared `CF_API_TOKEN` reaches both zones. Add `thalespm.me` in
+the same commit that adds the first route in it, not before.
+
+**The connector is an ordinary pod.** It carries neither `host` nor `ingress`
+identity, so an app policy written for the Cilium Gateway drops every public
+request. Its egress needs 7844 on **TCP and UDP**: `protocol: auto` tries QUIC
+first and falls back to http2, so UDP-only blocking costs a retry cycle per
+connector start.
+
+**The Gateway API bundle stays at 1.6.3, for Cilium.** cfgate pins 1.6.2 for its
+own validation and runs fine a patch behind; downgrading the bundle to match it
+would break the Cilium operator on this kube-proxy-free cluster.
+
+**`CloudflareTunnel` lives outside Argo.** `spec.cloudflare.accountId` has to be
+a literal (the CRD takes no Secret reference) and this repo is public, so
+`scripts/setup/setup-cfgate.sh` renders it from `CF_ACCOUNT_ID` and creates the
+token Secret. Same pattern as `keepalived.conf`.
+
+**The default connector image is a fork** (`ghcr.io/inherent-design/cloudflared`,
+digest-pinned by the CRD), not Cloudflare's own. The fork is only required when
+h2c is configured, which nginx does not use, so the official image is available
+if the supply chain matters more than staying on the tested default.
+
 ## Observability
 
 Metrics: VictoriaMetrics (Prometheus-compatible, viewed through Grafana). Logs: Grafana Alloy (River syntax, not YAML) → Loki, 15-day retention.

@@ -1,0 +1,27 @@
+# Outside Argo on purpose: accountId has to be a literal (the CRD takes no
+# Secret reference for it) and this repo is public, so the value is rendered
+# from CF_ACCOUNT_ID by setup-cfgate.sh, same pattern as keepalived.conf.
+apiVersion: cfgate.io/v1alpha1
+kind: CloudflareTunnel
+metadata:
+  name: seireitei
+  namespace: cfgate-edge
+spec:
+  tunnel:
+    name: seireitei
+  cloudflare:
+    accountId: "__CF_ACCOUNT_ID__"
+    secretRef:
+      name: cloudflare-api-token
+  cloudflared:
+    replicas: 2
+    # Keeping the CRD's digest-pinned default image, which is a cloudflared
+    # fork from ghcr.io/inherent-design. The fork is only required for h2c,
+    # which nginx does not use, so the official image is an option once the
+    # tunnel is proven; it is not a variable worth adding during validation.
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 192Mi

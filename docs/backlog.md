@@ -113,3 +113,20 @@ control plane in a restart loop and nothing was looking. The lab had
 by design. Confirmed in production on 2026-11-23: HTTP 200 and 100% packet loss
 at the same instant. An Uptime Kuma ping check against a cluster service would
 be a permanent false alert.
+
+## cfgate is not monitored yet (2026-11-23)
+
+The service checklist was deliberately deferred, not skipped: cfgate is alpha
+and may be removed, so the Uptime Kuma entry and the scrape job wait until the
+canary has held for a few days. Writing it down because this is exactly the gap
+the checklist exists to prevent.
+
+Three pieces when it stays: the controller's metrics on 8080 in `cfgate-system`
+need a NodePort Service to be reachable from the VictoriaMetrics in Docker, the
+same way `kube-state-metrics` is exposed on 30808; a `job_name` in
+`prometheus.yml`; and two monitors in `setup-uptime-kuma.py`, one on
+`cfgate.thalesmachado.net` with a keyword check for `canary ok` and one on
+whatever real hostname the tunnel serves, because a single check cannot tell
+the tunnel and the app apart. The connector's own listener (44483) carries metrics, probes and
+diagnostics together, and its readiness does not establish origin reachability,
+so it is not a substitute for an end-to-end check.
