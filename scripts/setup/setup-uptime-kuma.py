@@ -117,8 +117,6 @@ MONITORS = [
     # --- External / Public ---
     ("N8N (public)",          "https://n8n.thalespm.me",          "External", 120),
     ("Vaultwarden (public)",  "https://vaultwarden.thalespm.me",  "External", 120),
-    # public only, no *.lan route
-    ("thalespm.me",           "https://thalespm.me",              "External", 60),
     # no cluster desde 2026-11-23, servido pelo tunel do cfgate
     ("thalesmachado.net",     "https://thalesmachado.net",        "External", 60),
     # canary permanente: separa o caminho publico (tunel) da aplicacao, para um
