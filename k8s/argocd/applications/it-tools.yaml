@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/thales-machado/homelab
     targetRevision: main
-    path: k8s/apps/it-tools
+    path: k8s/apps/utilities/it-tools
   destination:
     server: https://kubernetes.default.svc
     namespace: it-tools

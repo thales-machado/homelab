@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/thales-machado/homelab
     targetRevision: main
-    path: k8s/apps/openspeedtest
+    path: k8s/apps/utilities/openspeedtest
   destination:
     server: https://kubernetes.default.svc
     namespace: openspeedtest

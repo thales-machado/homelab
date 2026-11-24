@@ -25,6 +25,8 @@ REPO = Path(__file__).resolve().parents[2]
 README = REPO / "README.md"
 HOSTS_DIR = REPO / "docker" / "hosts"
 K8S_APPS = REPO / "k8s" / "apps"
+# the single cluster;named here so the table says where, like the Docker hosts do
+CLUSTER = "seireitei"
 
 START = "<!-- inventory:start -->"
 END = "<!-- inventory:end -->"
@@ -62,13 +64,16 @@ def k8s_services():
     found = {}
     for category_dir in sorted(p for p in K8S_APPS.iterdir() if p.is_dir()):
         for app_dir in sorted(p for p in category_dir.iterdir() if p.is_dir()):
-            found[(category_dir.name, app_dir.name)] = ("k8s", {"cluster"})
+            found[(category_dir.name, app_dir.name)] = ("k8s", {CLUSTER})
     return found
 
 
 def render(rows):
     out = ["| Service | Runtime | Host | Category |", "|---|---|---|---|"]
-    for (category, service), (runtime, hosts) in sorted(rows.items()):
+    # Sorted by service name, not by category: the question this table answers is
+    # "where does X run?", and the category tree in infra/ and k8s/apps/ is the
+    # better place to browse a domain.
+    for (category, service), (runtime, hosts) in sorted(rows.items(), key=lambda r: r[0][1]):
         where = ", ".join(f"`{h}`" for h in sorted(hosts))
         out.append(f"| `{service}` | {runtime} | {where} | `{category}` |")
     return "\n".join(out)

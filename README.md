@@ -59,53 +59,56 @@ not an oversight.
 
 | Service | Runtime | Host | Category |
 |---|---|---|---|
-| `dagu` | docker | `zangetsu` | `automation` |
-| `n8n` | docker | `urahara` | `automation` |
-| `immich` | docker | `urahara` | `content` |
-| `paperless-ngx` | docker | `urahara` | `content` |
-| `stirling-pdf` | docker | `urahara` | `content` |
-| `tandoor` | docker | `urahara` | `content` |
-| `firefly-iii` | docker | `zangetsu` | `finance` |
-| `firefly-iii-data-importer` | docker | `zangetsu` | `finance` |
-| `evolution-api` | docker | `urahara` | `integration` |
-| `rclone` | docker | `urahara` | `media-player` |
-| `samba` | docker | `urahara` | `media-player` |
-| `wolf` | docker | `urahara` | `media-player` |
+| `autoheal` | docker | `urahara`, `zangetsu` | `platform` |
 | `blackbox-exporter` | docker | `zangetsu` | `observability` |
 | `cadvisor` | docker | `urahara`, `zangetsu` | `observability` |
-| `dozzle` | docker | `zangetsu` | `observability` |
-| `dozzle-agent` | docker | `urahara` | `observability` |
-| `grafana` | docker | `zangetsu` | `observability` |
-| `grafana-alloy` | docker | `urahara`, `zangetsu` | `observability` |
-| `loki` | docker | `zangetsu` | `observability` |
-| `node-exporter` | docker | `urahara`, `zangetsu` | `observability` |
-| `postgres-exporter` | docker | `zangetsu` | `observability` |
-| `redis-exporter` | docker | `urahara`, `zangetsu` | `observability` |
-| `scrutiny` | docker | `zangetsu` | `observability` |
-| `smartctl-exporter` | docker | `urahara`, `zangetsu` | `observability` |
-| `unpoller` | docker | `zangetsu` | `observability` |
-| `uptime-kuma` | docker | `zangetsu` | `observability` |
-| `victoriametrics` | docker | `zangetsu` | `observability` |
-| `autoheal` | docker | `urahara`, `zangetsu` | `platform` |
+| `calnode` | docker | `urahara` | `utilities` |
 | `cloudflared-agent` | docker | `zangetsu` | `platform` |
 | `crowdsec` | docker | `urahara` | `platform` |
+| `dagu` | docker | `zangetsu` | `automation` |
 | `dockflare` | docker | `zangetsu` | `platform` |
 | `dockflare-agent` | docker | `urahara` | `platform` |
+| `dozzle` | docker | `zangetsu` | `observability` |
+| `dozzle-agent` | docker | `urahara` | `observability` |
+| `evolution-api` | docker | `urahara` | `integration` |
+| `firefly-iii` | docker | `zangetsu` | `finance` |
+| `firefly-iii-data-importer` | docker | `zangetsu` | `finance` |
+| `grafana` | docker | `zangetsu` | `observability` |
+| `grafana-alloy` | docker | `urahara`, `zangetsu` | `observability` |
 | `healthchecks` | docker | `zangetsu` | `platform` |
+| `home-assistant` | docker | `urahara` | `smart-home` |
+| `homepage` | docker | `zangetsu` | `utilities` |
+| `immich` | docker | `urahara` | `content` |
+| `it-tools` | k8s | `seireitei` | `utilities` |
 | `keepalived` | docker | `urahara`, `zangetsu` | `platform` |
 | `komodo` | docker | `urahara`, `zangetsu` | `platform` |
+| `loki` | docker | `zangetsu` | `observability` |
+| `n8n` | docker | `urahara` | `automation` |
 | `nebula-sync` | docker | `zangetsu` | `platform` |
+| `node-exporter` | docker | `urahara`, `zangetsu` | `observability` |
+| `openspeedtest` | k8s | `seireitei` | `utilities` |
+| `paperless-ngx` | docker | `urahara` | `content` |
 | `pi-hole` | docker | `urahara`, `zangetsu` | `platform` |
-| `tailscale` | docker | `urahara`, `zangetsu` | `platform` |
-| `traefik` | docker | `zangetsu` | `platform` |
-| `vaultwarden` | docker | `zangetsu` | `platform` |
-| `watchtower` | docker | `urahara`, `zangetsu` | `platform` |
-| `home-assistant` | docker | `urahara` | `smart-home` |
-| `calnode` | docker | `urahara` | `utilities` |
-| `homepage` | docker | `zangetsu` | `utilities` |
+| `postgres-exporter` | docker | `zangetsu` | `observability` |
 | `qbittorrent` | docker | `urahara` | `utilities` |
+| `rclone` | docker | `urahara` | `media-player` |
+| `redis-exporter` | docker | `urahara`, `zangetsu` | `observability` |
+| `samba` | docker | `urahara` | `media-player` |
+| `scrutiny` | docker | `zangetsu` | `observability` |
+| `smartctl-exporter` | docker | `urahara`, `zangetsu` | `observability` |
+| `stirling-pdf` | docker | `urahara` | `content` |
+| `tailscale` | docker | `urahara`, `zangetsu` | `platform` |
+| `tandoor` | docker | `urahara` | `content` |
+| `thalesmachado-net` | k8s | `seireitei` | `utilities` |
+| `traefik` | docker | `zangetsu` | `platform` |
 | `trilium` | docker | `urahara` | `utilities` |
+| `unpoller` | docker | `zangetsu` | `observability` |
+| `uptime-kuma` | docker | `zangetsu` | `observability` |
+| `vaultwarden` | docker | `zangetsu` | `platform` |
+| `victoriametrics` | docker | `zangetsu` | `observability` |
 | `vikunja` | docker | `urahara` | `utilities` |
+| `watchtower` | docker | `urahara`, `zangetsu` | `platform` |
+| `wolf` | docker | `urahara` | `media-player` |
 
 <!-- inventory:end -->
 

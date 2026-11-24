@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/thales-machado/homelab
     targetRevision: main
-    path: k8s/apps/thalesmachado-net
+    path: k8s/apps/utilities/thalesmachado-net
   destination:
     server: https://kubernetes.default.svc
     namespace: thalesmachado-net
