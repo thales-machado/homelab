@@ -51,12 +51,14 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
-    # The only origin so far is the canary, in this namespace. An app in its
-    # own namespace gets its own rule when its public route is created.
+    # Origins: the canary here, and one rule per app namespace published.
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: cfgate-edge
             app: canary
+        - matchLabels:
+            io.kubernetes.pod.namespace: thalesmachado-net
+            app: thalesmachado-net
       toPorts:
         - ports:
             - port: "8080"

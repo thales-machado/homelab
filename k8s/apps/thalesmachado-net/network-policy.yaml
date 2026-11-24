@@ -13,6 +13,17 @@ spec:
     - fromEntities:
         - host
         - ingress
+    # The public path arrives from an ordinary pod in cfgate-edge, so it carries
+    # neither of those identities and needs its own rule.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cfgate-edge
+            app.kubernetes.io/name: cloudflared
+            app.kubernetes.io/managed-by: cfgate
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:

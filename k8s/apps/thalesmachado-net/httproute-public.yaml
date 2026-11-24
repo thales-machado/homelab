@@ -1,0 +1,20 @@
+# Public path for the site, through the cfgate tunnel. www, not a throwaway
+# name: if the apex moves to the cluster this stays as a normal alias, and if
+# cfgate is dropped the record is deleted with nothing lost either way. The
+# apex itself stays with DockFlare until the cutover.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: thalesmachado-net-public
+  namespace: thalesmachado-net
+spec:
+  parentRefs:
+    - name: public
+      namespace: cfgate-edge
+      sectionName: http
+  hostnames:
+    - www.thalesmachado.net
+  rules:
+    - backendRefs:
+        - name: thalesmachado-net
+          port: 80

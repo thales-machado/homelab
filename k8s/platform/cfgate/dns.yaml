@@ -19,6 +19,7 @@ spec:
       namespaceSelector:
         matchNames:
           - cfgate-edge
+          - thalesmachado-net
   defaults:
     # A tunnel CNAME only works proxied.
     proxied: true

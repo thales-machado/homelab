@@ -310,7 +310,18 @@ any real hostname.
 DNS API has no conditional write, so a TXT ownership marker is not a lock. cfgate
 refuses to touch a record it does not own, which is what makes coexistence safe,
 but a hostname being migrated must have its DockFlare labels removed first and
-only then be adopted.
+only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
+`thalesmachado.net` left the DockFlare apex untouched, still with no comment.
+
+**A new public hostname can be invisible from inside the LAN.** Whoever resolved
+the name before the record existed caches the NXDOMAIN for the zone's negative
+TTL, and with Pi-hole HA that can be one instance only - the VIP holder
+answering NXDOMAIN while the other answers correctly, which reads as a broken
+record rather than a stale cache. `docker compose exec pi-hole pihole reloaddns`
+flushes it ("Flushing DNS cache"), so the VIP holder's FTL does not need a
+restart. This matters because Uptime Kuma resolves through Pi-hole: a monitor
+created alongside a new hostname can fail for reasons that have nothing to do
+with the service.
 
 **`CloudflareDNS.spec.zones` lists one zone per route that exists.** An
 undeclared zone is never read, and that is the containment while the controller
