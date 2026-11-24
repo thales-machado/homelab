@@ -19,6 +19,13 @@ spec:
     # 1.6.2 for validation while this cluster runs 1.6.3 for Cilium; the bundle
     # stays where Cilium needs it.
     targetRevision: 1.10.0
+    # TEMPORARIO - validacao do patch de quoting de TXT (PR upstream), remover depois.
+    helm:
+      parameters:
+        - name: image.repository
+          value: docker.io/library/cfgate
+        - name: image.tag
+          value: txt-quoting-2
   destination:
     server: https://kubernetes.default.svc
     namespace: cfgate-system

@@ -313,6 +313,24 @@ but a hostname being migrated must have its DockFlare labels removed first and
 only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
 `thalesmachado.net` left the DockFlare apex untouched, still with no comment.
 
+**Never save a cfgate record in the Cloudflare dashboard.** Opening one of
+cfgate's own records there and pressing save, even with nothing changed, wraps
+its content in quotes, because the dashboard quotes TXT content on save while
+the API stores what it is sent. cfgate compares the ownership TXT as raw text,
+so the quoted value stops matching: it declares `ownership conflict ... owned by
+different controller`, the `CloudflareDNS` goes `Ready=False`, the hostname's
+write sits in `pendingWrites`, and the reconcile retries every 40 seconds
+forever. Nothing alerts, because the record already in the zone keeps serving
+and the hostname answers 200 throughout. This happened three times on
+2026-11-24, once costing ten hours and roughly 850 failed reconciles before
+anyone looked. The repair is to strip the quotes from the record's content,
+which `status.records[].status` and the ownership TXT read through the API will
+confirm; enumerate every `_cfgate.*` record rather than the ones you remember,
+since the dashboard marks the healthy, unquoted ones with a warning icon and
+leaves the broken one unmarked. The fix is upstream in
+`thales-machado/cfgate@fix/txt-content-quoting`; until it is merged and
+released, the dashboard stays read-only for these records.
+
 **Moving a Docker service to the cluster, in order.** Done three times on
 2026-11-23/24 (the site, openspeedtest, it-tools) and the steps are stable.
 Publish in the cluster first and leave DNS pointing at Traefik: the hostname is
