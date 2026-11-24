@@ -42,5 +42,4 @@ include:
   - ../../services/platform/networking/traefik/traefik.yaml
   - ../../services/platform/security/vaultwarden/vaultwarden.yaml
   - ../../services/utilities/homepage/homepage.yaml
-  - ../../services/utilities/openspeedtest/openspeedtest.yaml
   - watchtower-hostname.yaml

@@ -107,7 +107,7 @@ records:
   - domain: trilium.lan.thalespm.me
     ip: 192.168.15.214
   - domain: speedtest.lan.thalespm.me
-    ip: 192.168.15.214
+    ip: 192.168.15.241
   - domain: vikunja.lan.thalespm.me
     ip: 192.168.15.214
 

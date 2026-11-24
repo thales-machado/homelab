@@ -104,7 +104,6 @@ not an oversight.
 | `calnode` | docker | `urahara` | `utilities` |
 | `homepage` | docker | `zangetsu` | `utilities` |
 | `it-tools` | docker | `urahara` | `utilities` |
-| `openspeedtest` | docker | `zangetsu` | `utilities` |
 | `qbittorrent` | docker | `urahara` | `utilities` |
 | `trilium` | docker | `urahara` | `utilities` |
 | `vikunja` | docker | `urahara` | `utilities` |
