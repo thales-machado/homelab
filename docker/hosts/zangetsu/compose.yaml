@@ -43,5 +43,4 @@ include:
   - ../../services/platform/security/vaultwarden/vaultwarden.yaml
   - ../../services/utilities/homepage/homepage.yaml
   - ../../services/utilities/openspeedtest/openspeedtest.yaml
-  - ../../services/utilities/thalesmachado-net/thalesmachado-net.yaml
   - watchtower-hostname.yaml

@@ -106,7 +106,6 @@ not an oversight.
 | `it-tools` | docker | `urahara` | `utilities` |
 | `openspeedtest` | docker | `zangetsu` | `utilities` |
 | `qbittorrent` | docker | `urahara` | `utilities` |
-| `thalesmachado-net` | docker | `zangetsu` | `utilities` |
 | `trilium` | docker | `urahara` | `utilities` |
 | `vikunja` | docker | `urahara` | `utilities` |
 
