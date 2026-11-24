@@ -20,6 +20,55 @@ spec:
         resources:
           requests: {cpu: 10m, memory: 32Mi}
           limits: {memory: 128Mi}
+        # cfgate's own metrics cannot carry this alert. It exports one gauge,
+        # the timestamp of the last completed reconcile, and its help text says
+        # it counts failed attempts too, so it stayed healthy through a ten-hour
+        # outage on 2026-11-24. The controller-runtime error counter would work
+        # but sits behind a two-replica Service with leader election, so a
+        # scrape lands on the follower half the time and reads zero. Object
+        # state has neither problem.
+        customResourceState:
+          enabled: true
+          config:
+            spec:
+              resources:
+                - groupVersionKind:
+                    group: cfgate.io
+                    version: v1alpha1
+                    kind: CloudflareDNS
+                  metricNamePrefix: cfgate_dns
+                  labelsFromPath:
+                    namespace: [metadata, namespace]
+                    name: [metadata, name]
+                  metrics:
+                    - name: failed_records
+                      help: "Records the controller could not sync."
+                      each:
+                        type: Gauge
+                        gauge:
+                          path: [status, failedRecords]
+                          nilIsZero: true
+                    - name: synced_records
+                      help: "Records currently in sync."
+                      each:
+                        type: Gauge
+                        gauge:
+                          path: [status, syncedRecords]
+                          nilIsZero: true
+                    - name: condition
+                      help: "Status conditions, 1 when True."
+                      each:
+                        type: Gauge
+                        gauge:
+                          path: [status, conditions]
+                          labelsFromPath:
+                            type: [type]
+                          valueFrom: [status]
+        rbac:
+          extraRules:
+            - apiGroups: ["cfgate.io"]
+              resources: ["cloudflarednses"]
+              verbs: ["list", "watch"]
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-state-metrics

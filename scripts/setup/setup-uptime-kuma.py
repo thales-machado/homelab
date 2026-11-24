@@ -93,8 +93,9 @@ MONITORS = [
 
     # --- Utilities ---
     ("Homepage",         "http://homepage:3000",          "Utilities",     60),
-    ("OpenSpeedTest",     "http://openspeedtest:3000",    "Utilities",     60),
-    ("IT-Tools",         "http://192.168.15.215:8092",    "Utilities",     60),
+    # no cluster desde 2026-11-23: pelo hostname, exercitando DNS + Gateway + TLS
+    ("OpenSpeedTest",    "https://speedtest.lan.thalespm.me", "Utilities",  60),
+    ("IT-Tools",         "https://it-tools.lan.thalespm.me",  "Utilities",  60),
     ("Calnode",          "http://192.168.15.215:8093",    "Utilities",     60),
     ("Vikunja",          "http://192.168.15.215:3456",    "Utilities",     60),
     ("TriliumNext",      "http://192.168.15.215:8091",    "Utilities",     60),
@@ -118,6 +119,11 @@ MONITORS = [
     ("Vaultwarden (public)",  "https://vaultwarden.thalespm.me",  "External", 120),
     # public only, no *.lan route
     ("thalespm.me",           "https://thalespm.me",              "External", 60),
+    # no cluster desde 2026-11-23, servido pelo tunel do cfgate
+    ("thalesmachado.net",     "https://thalesmachado.net",        "External", 60),
+    # canary permanente: separa o caminho publico (tunel) da aplicacao, para um
+    # incidente dizer qual dos dois quebrou em vez de so "o site caiu"
+    ("cfgate canary",         "https://cfgate.thalesmachado.net", "External", 60),
 ]
 
 # --- DOCKER CONTAINERS ---
@@ -144,7 +150,6 @@ DOCKER_MONITORS = {
         "komodo-postgres",
         "nebula-sync",
         "tailscale",
-        "thalesmachado-net-containers",
     ],
     "urahara": [
         "autoheal",

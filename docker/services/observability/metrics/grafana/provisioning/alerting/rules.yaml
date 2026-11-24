@@ -806,6 +806,45 @@ groups:
             host: urahara
           isPaused: false
 
+        - uid: cfgate-dns-not-ready
+          title: cfgate cannot manage a DNS record (seireitei)
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: ffssrfrz5yxogd
+              model:
+                expr: min(cfgate_dns_condition{type="Ready"})
+                instant: true
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: Alerting
+          execErrState: Error
+          for: 10m
+          annotations:
+            summary: 'The CloudflareDNS resource has been not Ready for 10 minutes, so cfgate has lost control of at least one hostname at the cluster edge. Traffic is usually unaffected, which is the trap: the records already in the zone keep serving and every HTTP check stays green, so nothing else will tell you. It does not self-heal and it blocks every DNS change, including new services. On 2026-11-24 this ran ten hours and roughly 850 failed reconciles unnoticed, after an ownership TXT record was saved in the Cloudflare dashboard, which quotes the content and makes cfgate stop recognizing its own record (see CONVENTIONS.md). Run kubectl -n cfgate-edge get cloudflaredns seireitei -o json and read status.records[] for the hostname and status.pendingWrites for the stuck write. noData is Alerting on purpose: this metric comes from kube-state-metrics reading the object, so silence means the object or the exporter is gone.'
+          labels:
+            severity: critical
+            shortname: CFGATE
+            host: urahara
+          isPaused: false
+
 # Orphan rules removed via file (deleteRules). Grafana does not delete a
 # file-provisioned rule just because it disappeared from groups: above
 # (known, documented bug; X-Disable-Provenance does not work for deleting via
