@@ -49,26 +49,30 @@ homelab-cp() {
 tf() {
   local proj="$1"; shift
   local envf="${HOMELAB_ENV:?HOMELAB_ENV is not set on this host}"
-  local account traefik_ip
+  local account
+  local extra=()
 
   # The S3 backend talks to Cloudflare R2, whose endpoint carries the account id.
   # backend.tf reads it from the environment so the id stays out of git.
   account=$(grep '^CF_ACCOUNT_ID=' "$envf" | cut -d= -f2-)
   [ -n "$account" ] || { echo "tf: CF_ACCOUNT_ID missing from $envf" >&2; return 1; }
 
-  # *.lan.thalespm.me resolves through Pi-hole, which the container cannot reach.
-  # Resolve Traefik's address on the host instead of hardcoding it.
-  traefik_ip=$(docker inspect -f \
-    '{{(index .NetworkSettings.Networks "cloudflare-net").IPAddress}}' traefik 2>/dev/null)
-  [ -n "$traefik_ip" ] || { echo "tf: no traefik container on this host" >&2; return 1; }
+  # One credential per project: a run never carries a secret it has no use for.
+  case "$proj" in
+    healthchecks)
+      extra+=(-e "HEALTHCHECKSIO_API_KEY=$(grep '^HEALTHCHECKS_API_KEY=' "$envf" | cut -d= -f2-)") ;;
+    cloudflare)
+      extra+=(-e "CLOUDFLARE_API_TOKEN=$(grep '^CF_API_TOKEN=' "$envf" | cut -d= -f2-)") ;;
+    *)
+      echo "tf: unknown project '$proj'" >&2; return 1 ;;
+  esac
 
   docker run --rm -it \
     --network cloudflare-net \
-    --add-host healthchecks.lan.thalespm.me:"$traefik_ip" \
+    "${extra[@]}" \
     -v "$HOMELAB_ROOT/terraform/$proj:/workspace" -w /workspace \
     -e AWS_ENDPOINT_URL_S3="https://${account}.r2.cloudflarestorage.com" \
     -e AWS_ACCESS_KEY_ID="$(grep '^R2_ACCESS_KEY_ID=' "$envf" | cut -d= -f2-)" \
     -e AWS_SECRET_ACCESS_KEY="$(grep '^R2_SECRET_ACCESS_KEY=' "$envf" | cut -d= -f2-)" \
-    -e HEALTHCHECKSIO_API_KEY="$(grep '^HEALTHCHECKS_API_KEY=' "$envf" | cut -d= -f2-)" \
     hashicorp/terraform:latest "$@"
 }
