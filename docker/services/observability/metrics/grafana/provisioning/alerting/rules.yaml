@@ -838,7 +838,7 @@ groups:
           execErrState: Error
           for: 10m
           annotations:
-            summary: 'The CloudflareDNS resource has been not Ready for 10 minutes, so cfgate has lost control of at least one hostname at the cluster edge. Traffic is usually unaffected, which is the trap: the records already in the zone keep serving and every HTTP check stays green, so nothing else will tell you. It does not self-heal and it blocks every DNS change, including new services. On 2026-11-24 this ran ten hours and roughly 850 failed reconciles unnoticed, after an ownership TXT record was saved in the Cloudflare dashboard, which quotes the content and makes cfgate stop recognizing its own record (see CONVENTIONS.md). Run kubectl -n cfgate-edge get cloudflaredns seireitei -o json and read status.records[] for the hostname and status.pendingWrites for the stuck write. noData is Alerting on purpose: this metric comes from kube-state-metrics reading the object, so silence means the object or the exporter is gone.'
+            summary: 'cfgate lost control of a DNS record at the cluster edge and will not recover on its own. Traffic keeps working, so nothing else shows it. Which hostname: kubectl -n cfgate-edge get cloudflaredns seireitei -o json, read status.records[]. Usual cause in CONVENTIONS.md.'
           labels:
             severity: critical
             shortname: CFGATE
