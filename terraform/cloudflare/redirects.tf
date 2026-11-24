@@ -3,13 +3,6 @@
 # writes only hostnames neither of them knows about, so the rule that matters
 # holds: one writer per hostname.
 
-# Looked up by name so the zone id stays out of a public repo.
-data "cloudflare_zone" "thalesmachado_net" {
-  filter = {
-    name = "thalesmachado.net"
-  }
-}
-
 # A redirect only applies to a hostname Cloudflare proxies, and this one has no
 # origin, so the address is the documented placeholder: the edge answers the
 # request and never connects to it. If the rule below stops matching, visitors

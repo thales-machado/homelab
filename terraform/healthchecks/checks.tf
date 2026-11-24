@@ -1,18 +1,8 @@
-data "healthchecksio_channel" "homelab" {
-  kind = "webhook"
-}
-
-# Renamed again, to what actually pings it: the DAG n8n-backup-urahara carries
-# this check's id, while the DAG named sqlite-backup pinged nothing at all. The
-# green light on "sqlite-backup" was borrowed from another job on another host,
-# and zangetsu's own SQLite backup went unwatched. The move keeps the id, the
-# ping URL and the history: with this provider a name change is an in-place
-# update, which is how this same check was once renamed from vaultwarden-backup.
-moved {
-  from = healthchecksio_check.sqlite_backup
-  to   = healthchecksio_check.n8n_backup_urahara
-}
-
+# Named for what actually pings it: the DAG n8n-backup-urahara carries this
+# check's id, while the DAG named sqlite-backup pinged nothing at all, so the
+# green light on "sqlite-backup" was borrowed from another job on another host.
+# Renaming kept the id, the URL and the history: with this provider a name
+# change is an in-place update, not a replacement.
 resource "healthchecksio_check" "n8n_backup_urahara" {
   name     = "n8n-backup-urahara"
   schedule = "35 2 * * *"

@@ -313,6 +313,10 @@ but a hostname being migrated must have its DockFlare labels removed first and
 only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
 `thalesmachado.net` left the DockFlare apex untouched, still with no comment.
 
+**Every Terraform `data` block lives in `data.tf`, every `locals` in
+`locals.tf`**, one per module, whatever else the module has. Resources are
+grouped by subject in their own files.
+
 **Cloudflare edge config lives in `terraform/cloudflare/`.** Redirect rules
 have no other owner: DockFlare writes from Docker labels, cfgate from
 HTTPRoutes, and neither can express one. The rule is one writer per hostname,
