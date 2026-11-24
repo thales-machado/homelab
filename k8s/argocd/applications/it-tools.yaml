@@ -22,5 +22,7 @@ spec:
       - CreateNamespace=true
     managedNamespaceMetadata:
       labels:
+        # the public Gateway's allowedRoutes selector
+        cfgate-routes: "true"
         pod-security.kubernetes.io/enforce: restricted
         pod-security.kubernetes.io/enforce-version: latest

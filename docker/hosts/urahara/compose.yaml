@@ -40,7 +40,6 @@ include:
   - ../../services/platform/networking/tailscale/tailscale.yaml
   - ../../services/smart-home/home-assistant/home-assistant.yaml
   - ../../services/utilities/calnode/calnode.yaml
-  - ../../services/utilities/it-tools/it-tools.yaml
   - ../../services/utilities/trilium/trilium.yaml
   - ../../services/utilities/vikunja/vikunja.yaml
   - observability-ports.yaml

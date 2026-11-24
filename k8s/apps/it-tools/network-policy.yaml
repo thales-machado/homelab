@@ -7,11 +7,21 @@ spec:
   endpointSelector: {}
   ingress:
     # kubelet probes arrive as host; the Gateway's Envoy carries the reserved
-    # "ingress" identity, which is neither host nor a pod. The cfgate
-    # connector gets its own rule here when the public route is created.
+    # "ingress" identity, which is neither host nor a pod.
     - fromEntities:
         - host
         - ingress
+    # The public path arrives from an ordinary pod in cfgate-edge, so it
+    # carries neither of those identities.
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cfgate-edge
+            app.kubernetes.io/name: cloudflared
+            app.kubernetes.io/managed-by: cfgate
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:

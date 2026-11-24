@@ -59,6 +59,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: thalesmachado-net
             app: thalesmachado-net
+        - matchLabels:
+            io.kubernetes.pod.namespace: it-tools
+            app: it-tools
       toPorts:
         - ports:
             - port: "8080"

@@ -68,12 +68,6 @@ http:
       tls: { certresolver: cloudflare }
       middlewares: ["crowdsec", "security-headers"]
       service: qbittorrent
-    it-tools:
-      rule: "Host(`it-tools.lan.thalespm.me`)"
-      entrypoints: ["websecure"]
-      tls: { certresolver: cloudflare }
-      middlewares: ["crowdsec", "security-headers"]
-      service: it-tools
     trilium:
       rule: "Host(`trilium.lan.thalespm.me`)"
       entrypoints: ["websecure"]
@@ -154,10 +148,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.15.215:8095"
-    it-tools:
-      loadBalancer:
-        servers:
-          - url: "http://192.168.15.215:8092"
     trilium:
       loadBalancer:
         servers:

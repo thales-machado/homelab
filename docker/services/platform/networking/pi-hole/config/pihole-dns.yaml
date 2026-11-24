@@ -101,7 +101,7 @@ records:
   - domain: homepage.lan.thalespm.me
     ip: 192.168.15.214
   - domain: it-tools.lan.thalespm.me
-    ip: 192.168.15.214
+    ip: 192.168.15.241
   - domain: qbit.lan.thalespm.me
     ip: 192.168.15.214
   - domain: trilium.lan.thalespm.me

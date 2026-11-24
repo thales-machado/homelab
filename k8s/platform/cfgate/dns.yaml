@@ -6,11 +6,12 @@ metadata:
 spec:
   tunnelRef:
     name: seireitei
-  # Only this zone, even though the token reaches both: thalespm.me is where
-  # DockFlare keeps the homelab's whole public surface, and an undeclared zone
-  # is never read.
+  # thalespm.me joined on 2026-11-24, with the first route in it. DockFlare
+  # still owns every other hostname in that zone, which is safe because cfgate
+  # refuses to touch a record carrying no owner marker of its own.
   zones:
     - name: thalesmachado.net
+    - name: thalespm.me
   source:
     gatewayRoutes:
       enabled: true
@@ -20,6 +21,7 @@ spec:
         matchNames:
           - cfgate-edge
           - thalesmachado-net
+          - it-tools
   defaults:
     # A tunnel CNAME only works proxied.
     proxied: true

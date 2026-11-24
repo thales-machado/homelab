@@ -278,12 +278,12 @@
         server: urahara
         container: calnode
 
+    # No server/container: it runs in seireitei now, and Homepage reads
+    # container status from the Docker socket only.
     - IT-Tools:
         icon: it-tools.png
         href: https://it-tools.thalespm.me
         description: Developer Tools
-        server: urahara
-        container: it-tools
 
     - TriliumNext:
         icon: trilium.png
@@ -292,12 +292,11 @@
         server: urahara
         container: trilium
 
+    # No server/container: see IT-Tools above.
     - OpenSpeedTest:
         icon: openspeedtest.png
         href: https://speedtest.lan.thalespm.me
         description: Network Speed Test
-        server: zangetsu
-        container: openspeedtest
 
     - Vikunja:
         icon: vikunja.png
