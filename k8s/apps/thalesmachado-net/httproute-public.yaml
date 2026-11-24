@@ -1,7 +1,7 @@
-# Public path for the site, through the cfgate tunnel. www, not a throwaway
-# name: if the apex moves to the cluster this stays as a normal alias, and if
-# cfgate is dropped the record is deleted with nothing lost either way. The
-# apex itself stays with DockFlare until the cutover.
+# Public path for the site, through the cfgate tunnel. The apex moved here on
+# 2026-11-23: there is one writer per hostname, so the service left zangetsu's
+# include and DockFlare's rule was expired before cfgate could own the record.
+# www stays as an alias; dropping it is one line and deletes its record.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -13,6 +13,7 @@ spec:
       namespace: cfgate-edge
       sectionName: http
   hostnames:
+    - thalesmachado.net
     - www.thalesmachado.net
   rules:
     - backendRefs:
