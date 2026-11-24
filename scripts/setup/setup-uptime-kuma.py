@@ -179,10 +179,14 @@ def docker_monitor_names():
 # --- SCRIPT ---
 
 def list_monitors_db(db_path=KUMA_DB_PATH):
-    """Read id/name/type/parent of every monitor from SQLite (read-only)."""
+    """Read id/name/type/parent/url of every monitor from SQLite (read-only).
+
+    url is here so reconcile_existing can tell a moved service from a settled
+    one; without it the comparison reads None, never matches, and reports a
+    write that in fact succeeded as "Not applied"."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
-    rows = conn.execute("SELECT id, name, type, parent FROM monitor").fetchall()
+    rows = conn.execute("SELECT id, name, type, parent, url FROM monitor").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
