@@ -313,6 +313,16 @@ but a hostname being migrated must have its DockFlare labels removed first and
 only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
 `thalesmachado.net` left the DockFlare apex untouched, still with no comment.
 
+**Handing a hostname over from DockFlare takes a forced expiry.** Removing the
+service from a host's `include:` and deleting its containers does not free the
+name: DockFlare moves its rule to "pending deletion" with an 8-hour grace
+period, and the CNAME stays pointing at the old tunnel for all of it. Expire
+the rule in DockFlare's UI, confirm the record is gone, and only then add the
+hostname to the cluster route - one writer per hostname, in that order. A
+Komodo deploy does not remove the containers either: it runs `docker compose
+up -d` without `--remove-orphans`, so they survive as orphans until
+`docker rm -f`.
+
 **A new public hostname can be invisible from inside the LAN.** Whoever resolved
 the name before the record existed caches the NXDOMAIN for the zone's negative
 TTL, and with Pi-hole HA that can be one instance only - the VIP holder

@@ -130,3 +130,20 @@ whatever real hostname the tunnel serves, because a single check cannot tell
 the tunnel and the app apart. The connector's own listener (44483) carries metrics, probes and
 diagnostics together, and its readiness does not establish origin reachability,
 so it is not a substitute for an end-to-end check.
+
+## No deploy has run since 99a740f (2026-11-23)
+
+Found while moving the site off zangetsu: `/opt/homelab` there was three
+commits behind, and the containers had been created from that stale clone. The
+Komodo webhook fires from `ci.yaml` after `[yaml, compose, shell, python]`, and
+`inventory`/`terraform` do not gate it, so either one of those four jobs is red
+or the `curl -f` to the webhook is failing - which the Komodo doc describes as
+exit 22 on a `KOMODO_HOMELAB_<HOST>_WEBHOOK_SECRET` mismatch, silent until
+someone opens the run. Not diagnosed yet: open the Actions run for `bc156f8`
+and look at which job is red. This affects every future commit on both hosts,
+not just the site.
+
+Recovery used on zangetsu, straight from `docs/komodo.md`: `sudo chown -R
+keydrop:keydrop /opt/homelab`, then `git fetch && git reset --hard
+origin/main`. Periphery writes as root, so the ownership drifts back on the
+next deploy; that is expected, not a fix to repeat preemptively.
