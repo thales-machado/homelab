@@ -19,16 +19,6 @@ spec:
     # 1.6.2 for validation while this cluster runs 1.6.3 for Cilium; the bundle
     # stays where Cilium needs it.
     targetRevision: 1.10.0
-    # TEMPORARIO - teste do patch de quoting de TXT (PR upstream), remover depois.
-    # Aponta para a imagem construida no proprio urahara e importada no
-    # containerd; qualquer repository diferente do padrao faz o chart abandonar
-    # o digest fixo e usar repository:tag.
-    helm:
-      parameters:
-        - name: image.repository
-          value: docker.io/library/cfgate
-        - name: image.tag
-          value: txt-quoting
   destination:
     server: https://kubernetes.default.svc
     namespace: cfgate-system
