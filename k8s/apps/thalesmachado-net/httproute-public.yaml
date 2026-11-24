@@ -1,8 +1,8 @@
 # Public path for the site, through the cfgate tunnel. The apex moved here on
 # 2026-11-23: there is one writer per hostname, so the service left zangetsu's
 # include and DockFlare's rule was expired before cfgate could own the record.
-# www stays as a permanent alias, decided the same day; removing it would be
-# one line here and the record would go with it.
+# www is not here: it redirects to the apex at the edge, and both its record
+# and its rule live in terraform/cloudflare, so the hostname has one owner.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -15,7 +15,6 @@ spec:
       sectionName: http
   hostnames:
     - thalesmachado.net
-    - www.thalesmachado.net
   rules:
     - backendRefs:
         - name: thalesmachado-net

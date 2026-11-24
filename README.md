@@ -198,6 +198,7 @@ k8s/platform/                          what applications depend on: certificates
 k8s/apps/                              one directory per application
 scripts/                               setup, backup, networking, inventory, systemd units
 terraform/healthchecks/                Healthchecks.io checks as code
+terraform/cloudflare/                  Cloudflare edge: redirects and the hostnames they need
 .github/workflows/                     validation, secret scanning, deploy, DNS sync
 docs/                                  runbooks: backup, Komodo, Traefik/DockFlare, Wolf, k8s
 ```

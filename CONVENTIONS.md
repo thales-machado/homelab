@@ -313,6 +313,30 @@ but a hostname being migrated must have its DockFlare labels removed first and
 only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
 `thalesmachado.net` left the DockFlare apex untouched, still with no comment.
 
+**Cloudflare edge config lives in `terraform/cloudflare/`.** Redirect rules
+have no other owner: DockFlare writes from Docker labels, cfgate from
+HTTPRoutes, and neither can express one. The rule is one writer per hostname,
+not one writer per system, so that module also owns the DNS record of a
+hostname the cluster does not serve - `www` is Terraform's end to end, record
+and rule together, and it is absent from the site's HTTPRoute for exactly that
+reason. A hostname the cluster serves never gets a record here. Applied by
+hand (`terraform fmt` is all CI checks), so drift is possible and invisible;
+a `plan` job would be the fix if that ever matters.
+
+A redirect needs its hostname proxied, and a redirect-only hostname has no
+origin, hence the `192.0.2.1` placeholder: the edge answers and never connects
+to it. That also sets the failure mode - if the rule stops matching, Cloudflare
+proxies to that address and the visitor gets an origin error instead of the
+wrong content.
+
+**An HTTPRoute filter rejects the whole route on cfgate.** Rule and backend
+filters, method/header/query matches, timeouts, retries and session persistence
+are unsupported: the route gets `Accepted=False` with `UnsupportedValue` and
+contributes no forwarding rules at all, so a redirect or a header rewrite added
+there takes the service down rather than being ignored. Edge behaviour of that
+kind belongs at Cloudflare, or in the application - a canonical link tag in the
+site beats a redirect rule nobody can find in a repo.
+
 **Handing a hostname over from DockFlare takes a forced expiry.** Removing the
 service from a host's `include:` and deleting its containers does not free the
 name: DockFlare moves its rule to "pending deletion" with an 8-hour grace
