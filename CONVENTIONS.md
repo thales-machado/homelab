@@ -313,6 +313,18 @@ but a hostname being migrated must have its DockFlare labels removed first and
 only then be adopted. Verified on 2026-11-23: a full create/delete cycle in
 `thalesmachado.net` left the DockFlare apex untouched, still with no comment.
 
+**`pids_limit` on an agent scales with the host, not with the service.**
+Komodo Periphery collects stats from every container every 30 seconds and runs
+`docker compose` over the whole stack on deploy, so its thread use grows as
+containers are added. At the ordinary 128 it sat at 127/128 on a 37-container
+host, and the failure was silent in the worst way: the webhook arrived, Core
+logged `Successfully authenticated incoming webhook`, and the deploy simply
+never happened. Found on 2026-11-23 after three commits never reached the
+hosts. The symptom to recognise is `pthread_create failed: Resource
+temporarily unavailable`, and `docker exec` into the container failing with
+`unable to spawn stage-1`. Core was at 127/128 too. Checking is one command:
+`docker stats --no-stream --format '{{.Name}} {{.PIDs}}'`.
+
 **Every Terraform `data` block lives in `data.tf`, every `locals` in
 `locals.tf`**, one per module, whatever else the module has. Resources are
 grouped by subject in their own files.

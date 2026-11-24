@@ -63,7 +63,8 @@ services:
     restart: unless-stopped
     cpus: 0.50
     mem_limit: 512m
-    pids_limit: 128
+    # Also found at 127/128 on 2026-11-23, for the same reason as Periphery.
+    pids_limit: 512
     depends_on:
       - komodo-ferretdb
     # No depends_on: dockflare - cross-project depends_on does not work, and

@@ -131,7 +131,7 @@ the tunnel and the app apart. The connector's own listener (44483) carries metri
 diagnostics together, and its readiness does not establish origin reachability,
 so it is not a substitute for an end-to-end check.
 
-## No deploy has run since 99a740f (2026-11-23)
+## No deploy has run since 99a740f (2026-11-23) - RESOLVED same day
 
 Found while moving the site off zangetsu: `/opt/homelab` there was three
 commits behind, and the containers had been created from that stale clone. The
@@ -142,6 +142,12 @@ exit 22 on a `KOMODO_HOMELAB_<HOST>_WEBHOOK_SECRET` mismatch, silent until
 someone opens the run. Not diagnosed yet: open the Actions run for `bc156f8`
 and look at which job is red. This affects every future commit on both hosts,
 not just the site.
+
+Root cause, found the same evening: not the webhook at all. Core logs show it
+arriving and authenticating for both stacks all day. Periphery was pinned at
+127 of its 128 `pids_limit` and could not spawn a thread, so every deploy died
+without an error anywhere. Raised to 1024 (Core to 512) and recreated by hand
+on both hosts. The lesson is in CONVENTIONS.
 
 Recovery used on zangetsu, straight from `docs/komodo.md`: `sudo chown -R
 keydrop:keydrop /opt/homelab`, then `git fetch && git reset --hard
