@@ -131,6 +131,14 @@ the tunnel and the app apart. The connector's own listener (44483) carries metri
 diagnostics together, and its readiness does not establish origin reachability,
 so it is not a substitute for an end-to-end check.
 
+Alert on the `CloudflareDNS` status fields rather than on its `Ready` condition:
+`status.failedRecords`, `status.pendingRecords` and `status.pendingWrites`
+(alongside `status.syncedRecords` and the per-record `status.records[].status`).
+A single hostname can fail to write while the resource as a whole still reports
+`Ready=True`, which is the failure a `Ready` check would miss. `status.records`
+is also the one place that lists every hostname cfgate owns, useful when
+answering what it would delete.
+
 ## No deploy has run since 99a740f (2026-11-23) - RESOLVED same day
 
 Found while moving the site off zangetsu: `/opt/homelab` there was three
