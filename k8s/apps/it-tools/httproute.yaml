@@ -1,0 +1,17 @@
+# Phase 1: internal name only. The public route stays on the Docker container
+# through DockFlare until this one is proven and that rule is expired.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: it-tools
+  namespace: it-tools
+spec:
+  parentRefs:
+    - name: lan
+      namespace: gateway
+  hostnames:
+    - it-tools.lan.thalespm.me
+  rules:
+    - backendRefs:
+        - name: it-tools
+          port: 80

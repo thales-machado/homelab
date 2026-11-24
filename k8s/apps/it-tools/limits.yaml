@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: it-tools
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 10m
+        memory: 32Mi
+      default:
+        memory: 128Mi
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: budget
+  namespace: it-tools
+spec:
+  # Two pods, not one: a rolling update runs the new one alongside the old.
+  hard:
+    requests.cpu: 100m
+    requests.memory: 128Mi
+    limits.memory: 320Mi
