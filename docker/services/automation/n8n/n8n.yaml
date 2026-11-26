@@ -49,6 +49,10 @@ services:
     ports:
       - "192.168.15.215:8097:5678"
     labels:
+      # Custom-built image (build: ., never pushed to a registry): Watchtower
+      # has nothing to check it against and only logs "Failed to retrieve
+      # image info" every run. Update via `docker compose build` instead.
+      com.centurylinklabs.watchtower.enable: "false"
       dockflare.enable: "true"
       dockflare.hostname: "n8n.thalespm.me"
       dockflare.service: "http://n8n:5678"

@@ -40,4 +40,7 @@ services:
       - cloudflare-net
       - dockflare-internal
     labels:
-      com.centurylinklabs.watchtower.enable: "true"
+      # Self-update is already refused ("Published port detected") because
+      # of the ports: mapping above, so there's nothing to gain from
+      # scanning itself every run - just noise in the report.
+      com.centurylinklabs.watchtower.enable: "false"
