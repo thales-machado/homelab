@@ -8,6 +8,13 @@ services:
     pids_limit: 32
     ports:
       - "${WATCHTOWER_PORT:-8080}:8080"
+    volumes:
+      # ghcr.io auth (docker login run on the host as keydrop): REPO_USER/
+      # REPO_PASS below only cover Docker Hub, so ghcr.io pulls stayed
+      # anonymous and hit GHCR's anonymous rate limit during the nightly
+      # batch (2026-11-26). Watchtower reads this file the same way the
+      # Docker CLI does, on top of REPO_USER/REPO_PASS.
+      - /home/keydrop/.docker/config.json:/config.json:ro
     env_file:
       - ${HOMELAB_ENV}
     environment:
