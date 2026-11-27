@@ -23,10 +23,9 @@ services:
       - REPO_USER=${ADMIN_EMAIL}
       - REPO_PASS=${DOCKERHUB_PAT}
       - WATCHTOWER_CLEANUP=true
-      # 03:30 BRT: after the backups (sqlite-backup 02:30, postgres-backup
-      # 02:35) and before the early-morning n8n jobs (05:00-06:00). Updates
-      # recreate containers, so they must not overlap another schedule.
-      - "WATCHTOWER_SCHEDULE=0 30 3 * * *"
+      # 03:30 BRT default, between backups and n8n's early jobs. Overridable
+      # per host - see WATCHTOWER_SCHEDULE in CONVENTIONS.md.
+      - "WATCHTOWER_SCHEDULE=${WATCHTOWER_SCHEDULE:-0 30 3 * * *}"
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
       - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL}
       - WATCHTOWER_NOTIFICATION_REPORT=true

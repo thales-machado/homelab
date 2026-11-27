@@ -24,7 +24,8 @@ services:
     container_name: immich-db
     restart: unless-stopped
     cpus: 0.50
-    mem_limit: 512m
+    # 512m OOM-looped Postgres after an Immich version upgrade (2026-11-27).
+    mem_limit: 2048m
     pids_limit: 128
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d immich"]
