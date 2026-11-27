@@ -42,11 +42,9 @@ steps:
       known_host_file: /opt/homelab-ssh/known_hosts
       strict_host_key: true
       shell: /bin/sh
-      # The official n8n image does not expose `sh` in its entrypoint (only
-      # `n8n` subcommands as argv), confirmed in production with
-      # "Error: Command \"sh\" not found", hence no sh -c here. The output
-      # directory already exists and belongs to uid 1000 because of the
-      # previous "backup" step.
+      # n8n's image has no `sh` in its entrypoint (only `n8n` subcommands),
+      # confirmed by "Error: Command \"sh\" not found" - no sh -c here.
+      # Output dir already owned by uid 1000 from the "backup" step.
       command: >-
         docker run --rm
         -v /opt/apps/n8n:/home/node/.n8n
@@ -67,10 +65,8 @@ steps:
       key: /opt/homelab-ssh/id_ed25519
       known_host_file: /opt/homelab-ssh/known_hosts
       strict_host_key: true
-      # Explicit shell: without it Dagu undoes the \$ escaping before
-      # sending the command over SSH (same quirk as restic-backup-urahara),
-      # so $envf and $(...) would be expanded by the remote shell before the
-      # container even exists.
+      # Explicit shell: without it Dagu undoes the \$ escaping before SSH
+      # (same quirk as restic-backup-urahara), expanding $(...) too early.
       shell: /bin/sh
       command: >-
         docker run --rm

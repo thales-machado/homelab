@@ -31,11 +31,9 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  # Local hook: the table is generated from this repo's own include: lists, so
-  # there is nothing to pull from upstream. language: python, not system, so
-  # pre-commit supplies the interpreter: this repo is committed from WSL and
-  # from Windows, and `python3` does not exist on the second. The same check
-  # runs in CI, which covers a clone without `pre-commit install`.
+  # language: python, not system: Windows has no python3, so pre-commit must
+  # supply its own interpreter. CI runs the same check without needing
+  # `pre-commit install`.
   - repo: local
     hooks:
       - id: inventory

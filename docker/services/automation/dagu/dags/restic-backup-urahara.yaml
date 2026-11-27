@@ -25,12 +25,9 @@ steps:
       key: /opt/homelab-ssh/id_ed25519
       known_host_file: /opt/homelab-ssh/known_hosts
       strict_host_key: true
-      # Explicit shell: without it Dagu runs its own unescape pass before
-      # sending the command over SSH, breaking the \$ used below to defer
-      # variable expansion to the shell inside the container. ssh.run goes
-      # through a real remote shell, unlike docker.run, which talks to the
-      # Docker API directly, so unescaped $(...) and $VAR were expanded
-      # before the container existed.
+      # Explicit shell: ssh.run goes through a real remote shell (unlike
+      # docker.run's direct API call), so without this Dagu's unescape pass
+      # expands \$ and $(...) before the container exists.
       shell: /bin/sh
       command: >-
         docker run --rm

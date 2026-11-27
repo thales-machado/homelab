@@ -11,10 +11,9 @@ services:
     # keepalived/VRRP); plain SMB works fine on a bridge with port 445.
     ports:
       - "192.168.15.215:445:445"
-    # service_healthy, not service_started: the rclone container starts fast
-    # but the FUSE mount itself takes a few more seconds (see the healthcheck
-    # in rclone.yaml). This covers the race at first start; rslave below
-    # covers later remounts.
+    # service_healthy, not service_started: rclone's container starts before
+    # the FUSE mount is ready (see rclone.yaml's healthcheck) - this covers
+    # the race at first start; rslave below covers later remounts.
     depends_on:
       rclone:
         condition: service_healthy

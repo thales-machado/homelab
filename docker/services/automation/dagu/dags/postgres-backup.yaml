@@ -10,11 +10,9 @@ steps:
       interval_sec: 900
     action: docker.run
     with:
-      # postgres:17, not 16, on purpose: pg_dump refuses to dump a server
-      # NEWER than the client ("aborting because of server version
-      # mismatch"), and komodo-postgres runs 17.6 under FerretDB. A newer
-      # pg_dump always reads older servers, so 17 also covers the existing
-      # 16 databases (paperless/firefly/immich/tandoor).
+      # postgres:17 not 16: pg_dump can't dump a server newer than itself,
+      # and komodo-postgres runs 17.6. Newer pg_dump still reads the
+      # existing 16 databases fine.
       image: postgres:17-alpine
       pull: missing
       auto_remove: true

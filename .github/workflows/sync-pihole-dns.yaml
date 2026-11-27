@@ -37,10 +37,8 @@ jobs:
             exit 1
           fi
 
-          # The webhook node answers 200 as soon as it accepts the request, so
-          # the status alone cannot tell a started run from a rejected one: a
-          # wrong or missing N8N_WEBHOOK_SECRET still returns 200 with an
-          # error body, and the sync silently never runs.
+          # 200 just means n8n accepted the request; a bad N8N_WEBHOOK_SECRET
+          # still returns 200 with an error body and never runs the sync.
           if grep -q '"error"' /tmp/n8n_response.json; then
             echo "❌ n8n rejected the request (check N8N_WEBHOOK_SECRET)"
             exit 1

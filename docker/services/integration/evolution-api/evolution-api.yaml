@@ -101,9 +101,7 @@ services:
       com.centurylinklabs.watchtower.enable: "true"
     networks:
       - cloudflare-net
-    # No Traefik labels: this runs on urahara, and Traefik only discovers
-    # containers on its own host. The route comes from the file provider
-    # (docker/services/platform/networking/traefik/config/dynamic/cross-host.yml).
-    # Published on the LAN so Traefik (zangetsu) and VictoriaMetrics can reach it.
+    # Cross-host service (CONVENTIONS.md): bound to urahara's LAN IP so
+    # Traefik and VictoriaMetrics on zangetsu can reach it.
     ports:
       - "192.168.15.215:8094:8080"

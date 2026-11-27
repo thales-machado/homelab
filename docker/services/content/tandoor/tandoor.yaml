@@ -31,12 +31,8 @@ services:
       - "192.168.15.215:5434:5432"
 
   tandoor:
-    # Pinned to 2.6.13 (not :latest). A regression in 2.6.15 breaks AI import:
-    # the provider's JSON response is fed into scrape_html() (which expects
-    # HTML with schema.org), raises NoSchemaFoundInWildMode, and the import
-    # always fails. Upstream bug open, no fix:
-    # https://github.com/TandoorRecipes/recipes/issues/4829
-    # No Watchtower label while pinned, so it never drifts back to latest.
+    # Pinned to 2.6.13: 2.6.15 breaks AI import (NoSchemaFoundInWildMode).
+    # Upstream bug open: github.com/TandoorRecipes/recipes/issues/4829
     image: vabene1111/recipes:2.6.13
     container_name: tandoor
     restart: unless-stopped

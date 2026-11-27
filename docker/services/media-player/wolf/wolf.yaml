@@ -1,9 +1,8 @@
 services:
   wolf:
-    # Pinned by digest: Wolf has had no releases since 2024.07, only the
-    # rolling stable branch. Updates are manual (pull stable, check the new
-    # digest and test a stream before changing it here). No Watchtower label
-    # on purpose.
+    # Pinned by digest: Wolf only ships a rolling "stable" branch, no
+    # releases since 2024.07. Update manually: pull stable, test a
+    # stream, then update the digest here.
     image: ghcr.io/games-on-whales/wolf@sha256:b0ef253739f9bd49b71eba7e150c955fd05990c0d409e666d89236995351551a
     container_name: wolf
     restart: unless-stopped

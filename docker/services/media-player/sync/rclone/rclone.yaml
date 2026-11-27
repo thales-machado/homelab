@@ -21,16 +21,13 @@ services:
       - SYS_ADMIN
     security_opt:
       - apparmor:unconfined
-    # Published on urahara's LAN IP: Traefik (zangetsu) and the metrics scrape
-    # reach the rc API by IP:port. No --rc-web-gui: on 1.76.0 the flag crashes
-    # the process; the GUI is rclone-web served by the rc via --rc-files
-    # (downloaded by scripts/setup/setup-rclone-gui.sh).
+    # Cross-host (CONVENTIONS.md): Traefik/metrics reach the rc API by IP:port.
+    # No --rc-web-gui (crashes on 1.76.0); GUI is served via --rc-files
+    # (scripts/setup/setup-rclone-gui.sh).
     ports:
       - "192.168.15.215:5572:5572"
-    # Without this, consumers of the mount can start before FUSE is actually
-    # mounted (the process starts fast, the mount takes a few more seconds),
-    # and see an empty directory on cold boot. mountpoint -q confirms
-    # /data/mnt is a real mount, not an empty dir.
+    # Without this, consumers can start before FUSE actually mounts and see
+    # an empty dir on cold boot. mountpoint -q confirms it's a real mount.
     healthcheck:
       test: ["CMD", "mountpoint", "-q", "/data/mnt"]
       interval: 10s
@@ -41,15 +38,9 @@ services:
       - cloudflare-net
     labels:
       com.centurylinklabs.watchtower.enable: "true"
-    # vfs-cache-mode full (not writes): media players extracting embedded
-    # subtitles (PGS/ASS inside MKV) or seeking must re-read parts of the file.
-    # With "writes" only writes are cached, so every extraction re-downloaded
-    # the bytes from Drive and subtitle loading hung. "full" caches read
-    # blocks on local disk.
-    # tpslimit/bwlimit: the Drive service account is shared with another
-    # media server. Drive API quota is per GCP project + impersonated user,
-    # not per server, so without a throttle a heavy job here (e.g. a full
-    # library scan) can hit the rate limit and break streams elsewhere.
+    # vfs-cache-mode full: re-reads (subtitle extraction/seeking) would
+    # re-hit Drive under "writes" and hang. tpslimit/bwlimit: Drive quota
+    # is shared with another server account-wide - unthrottled breaks it too.
     command: >
       mount google: /data/mnt
       --allow-non-empty
