@@ -37,11 +37,9 @@ http:
           X-Powered-By: ""
           Server: ""
 
-    # For apps that frame themselves on purpose (the NAS web desktop opens
-    # each window as a same-origin iframe). frameDeny blocks framing from
-    # ANY origin, same-origin included, which broke those windows when
-    # reached through Traefik. SAMEORIGIN keeps third-party clickjacking
-    # protection without breaking them.
+    # For apps that frame themselves (NAS web desktop's same-origin iframes):
+    # frameDeny blocks ALL framing, same-origin included, breaking those
+    # windows through Traefik. SAMEORIGIN keeps clickjacking protection.
     security-headers-frameable:
       headers:
         customFrameOptionsValue: "SAMEORIGIN"

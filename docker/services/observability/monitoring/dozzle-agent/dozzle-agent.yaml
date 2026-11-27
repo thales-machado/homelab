@@ -13,11 +13,9 @@ services:
       - ${HOMELAB_ENV}
     environment:
       - TZ=${TZ}
-    # Published on urahara's LAN IP so the Dozzle master (zangetsu) can
-    # connect. Same cross-host pattern as other services (see CONVENTIONS.md,
-    # "Cross-host services (IP:port pattern)"). Agent mode replaces
-    # docker-socket-proxy here: the official Dozzle docs state explicitly
-    # that agent and proxy do not combine.
+    # Cross-host (CONVENTIONS.md): Dozzle master on zangetsu connects by
+    # IP:port. Agent mode replaces docker-socket-proxy here - Dozzle's docs
+    # say agent and proxy don't combine.
     ports:
       - "192.168.15.215:7007:7007"
     networks:

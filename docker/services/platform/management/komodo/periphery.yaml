@@ -10,10 +10,8 @@ services:
     restart: unless-stopped
     cpus: 0.50
     mem_limit: 512m
-    # Scales with the host, unlike an ordinary service: Periphery collects
-    # stats from every container every 30s and runs `docker compose` over the
-    # whole stack on deploy. At 128 it sat at 127 on a 37-container host and
-    # every thread it tried to spawn failed, silently - see docs/komodo.md.
+    # Scales with the host: at 128 it sat at 127 on a 37-container host and
+    # every new thread failed silently - see docs/komodo.md.
     pids_limit: 1024
     env_file:
       - ${HOMELAB_ENV}

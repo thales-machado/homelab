@@ -1,10 +1,8 @@
 services:
   thalesmachado-net:
-    # Separate repo (static Astro, github.com/thales-machado/thalesmachado.net).
-    # Published to GHCR by the repo's own CI (multi-arch build+push); the
-    # image name is the literal repo name (with the dot, "thalesmachado.net").
-    # The package is private, but zangetsu already has GHCR credentials
-    # (set up for whatsapp-gw/wa-courier), so pull works with no extra setup.
+    # Separate repo (Astro, github.com/thales-machado/thalesmachado.net),
+    # built+pushed to GHCR by its own CI. Private package, but zangetsu
+    # already has GHCR credentials (set up for whatsapp-gw/wa-courier).
     image: ghcr.io/thales-machado/thalesmachado.net:latest
     container_name: thalesmachado-net
     restart: unless-stopped
@@ -24,13 +22,9 @@ services:
         condition: service_started
     labels:
       com.centurylinklabs.watchtower.enable: "true"
-      # Public only: thalesmachado.net (main domain) + thalespm.me
-      # (transitional) via Cloudflare Tunnel / DockFlare (same tunnel, two
-      # zones; dockflare.zonename overrides the default CF_ZONE_ID only for
-      # rule .0). No dockflare.access.group on purpose: personal portfolio,
-      # must be reachable without MFA (same exception category as
-      # it-tools/immich/vaultwarden, see CONVENTIONS.md).
-      # thalespm.me will be removed later and the apex left empty (no redirect).
+      # Two zones, same tunnel: dockflare.zonename overrides CF_ZONE_ID only
+      # for rule .0 (thalesmachado.net). No access.group on purpose -
+      # personal portfolio, must work without MFA (CONVENTIONS.md exception).
       dockflare.enable: "true"
       dockflare.hostname: "thalespm.me"
       dockflare.service: "http://thalesmachado-net:8080"
@@ -39,12 +33,9 @@ services:
       dockflare.0.service: "http://thalesmachado-net:8080"
 
   thalesmachado-net-containers:
-    # Minimal sidecar that sums container counts from both hosts via the Komodo
-    # API; plain nginx cannot reshape or sum the JSON of two calls. Source and
-    # CI moved to the website's own repo on 2026-11-23, so everything the site
-    # needs lives in one place; the image is published next to the site's.
-    # KOMODO_URL defaults to komodo-core:9120, which is right here; the cluster
-    # overrides it because that name only exists on this network.
+    # Sums container counts from both hosts via Komodo's API - plain nginx
+    # can't reshape/sum two JSON calls. KOMODO_URL defaults to komodo-core:9120
+    # (right here); the cluster overrides it since that name is network-local.
     image: ghcr.io/thales-machado/thalesmachado.net-containers:latest
     container_name: thalesmachado-net-containers
     restart: unless-stopped

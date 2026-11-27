@@ -12,10 +12,8 @@ services:
       - ${HOMELAB_ENV}
     environment:
       - TZ=${TZ}
-      # Agent Mode: brings urahara's logs into this instance, no second Dozzle
-      # needed there. The "urahara" label shows as a collapsible sidebar group
-      # (see docker/services/observability/monitoring/dozzle-agent/dozzle-agent.yaml
-      # for the agent side).
+      # Agent Mode brings urahara's logs in here (no second Dozzle needed
+      # there); "urahara" shows as a collapsible sidebar group.
       - DOZZLE_REMOTE_AGENT=192.168.15.215:7007|urahara
     networks:
       - cloudflare-net

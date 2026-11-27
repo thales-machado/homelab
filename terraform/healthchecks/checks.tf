@@ -37,10 +37,9 @@ resource "healthchecksio_check" "postgres_backup" {
   name     = "postgres-backup"
   schedule = "35 2 * * *"
   timezone = "America/Sao_Paulo"
-  # 900s (15min) raised false alarms when the first attempt was SIGKILLed
-  # (memory pressure on the RPi5 during the Immich dump) and Dagu's retry
-  # (interval_sec: 900) only finished ~15min later, seen twice in
-  # production. 1500s (25min) covers one full retry with no false alarm.
+  # 900s false-alarmed twice: first attempt SIGKILLed (RPi5 memory
+  # pressure during the Immich dump), Dagu's retry only finished ~15min
+  # later. 1500s covers one full retry with no false alarm.
   grace    = 1500
   tags     = ["dagu", "backup"]
   channels = [data.healthchecksio_channel.homelab.id]
@@ -91,13 +90,9 @@ resource "healthchecksio_check" "immich_album_naming" {
   channels = [data.healthchecksio_channel.homelab.id]
 }
 
-# Created through the API by scripts/monitoring/check-wolf-image-updates.sh
-# before this file existed; adopted with `terraform import`, never recreated,
-# so the id the script looks up by name stays the same.
-#
-# Unusual on purpose: it pings /fail to report that a new image digest is
-# waiting on GHCR, so "down" here means "there is an update to review", not
-# "the job broke". Monthly, because that is the DAG's schedule.
+# Adopted via `terraform import` (predates this file) - never recreate,
+# the id must stay stable. Pings /fail on purpose: "down" here means
+# "GHCR has an update to review", not "the job broke".
 resource "healthchecksio_check" "wolf_image_check" {
   name     = "wolf-image-check"
   desc     = "Wolf pinned digests vs. GHCR. A failure means an update is available, not a broken job."

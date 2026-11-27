@@ -9,10 +9,8 @@ http:
       tls: { certresolver: cloudflare }
       middlewares: ["crowdsec", "security-headers"]
       service: rclone
-    # SPA fallback: rclone's --rc-files is a plain file server (404 on any
-    # non-file path) but the GUI routes by path (/login, /mounts...).
-    # replacePath only changes the path sent to rclone; the query string the
-    # GUI reads (/login?url=...) is kept.
+    # SPA fallback: rclone's --rc-files 404s on any non-file path, but the
+    # GUI routes by path. replacePath keeps the query string the GUI reads.
     rclone-spa:
       rule: "Host(`rclone.lan.thalespm.me`) && PathRegexp(`^/(login|dashboard|explorer|mounts|remotes|serves|settings|transfers|local)(/|$)`)"
       priority: 100

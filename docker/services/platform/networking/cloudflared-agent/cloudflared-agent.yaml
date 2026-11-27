@@ -1,9 +1,7 @@
 services:
   cloudflared-agent:
-    # Pinned and deliberately left without a Watchtower label: the whole
-    # public network depends on this one container, and an auto-update once
-    # took the tunnel down until someone intervened (CONVENTIONS.md, image
-    # policy).
+    # Pinned, no Watchtower label: this is the whole public network's
+    # tunnel, and an auto-update once took it down (CONVENTIONS.md).
     image: cloudflare/cloudflared:2026.8.2
     container_name: cloudflared-agent-lemonpi-5-tunel
     restart: unless-stopped

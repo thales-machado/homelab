@@ -67,10 +67,9 @@ EOF
   unset pat cfg
   echo "  ok  thalesmachado-net/ghcr"
 
-  # the same Komodo pair Homepage and the Docker sidecar already use.
-  # Two keys, so a manifest over a pipe instead of put_secret: --from-literal
-  # would put both values in argv, where ps can read them. base64 rather than
-  # stringData so no value can break the YAML.
+  # Same Komodo pair Homepage/sidecar already use. Piped manifest, not
+  # put_secret --from-literal: that puts values in argv, readable via ps.
+  # base64, not stringData, so no value can break the YAML.
   k=$(read_env KOMODO_API_KEY | base64 -w0)
   v=$(read_env KOMODO_API_SECRET | base64 -w0)
   cat <<EOF | kubectl apply -f - >/dev/null

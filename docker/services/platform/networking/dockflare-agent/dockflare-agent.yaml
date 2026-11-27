@@ -46,17 +46,9 @@ services:
     networks:
       - cloudflare-net
     restart: "no"
-    # profiles: init - only runs with `docker compose --profile init up -d
-    # dockflare-agent-init`, never with a plain `docker compose up -d`. Must
-    # be run manually before the first start on a new host or reset volume
-    # (chowns /opt/apps/dockflare-agent to UID 65532, which dockflare-agent
-    # runs as). Without it dockflare-agent fails with a permission error on
-    # first start. Accepted trade-off: without profiles, depends_on:
-    # service_completed_successfully forced dockflare-agent to wait for init
-    # on every stack start (and init stayed in Exited(0) forever, cluttering
-    # Komodo). Komodo has no native label to hide a single container from the
-    # list (`komodo.skip` only affects the bulk "Stop All Containers" action,
-    # not the UI).
+    # profiles: init - only runs via `docker compose --profile init up -d
+    # dockflare-agent-init`, to chown /opt/apps/dockflare-agent to UID 65532
+    # before first start. See CONVENTIONS.md for why not depends_on.
     profiles:
       - init
     labels:

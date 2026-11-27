@@ -6,11 +6,9 @@ services:
     cpus: 0.20
     mem_limit: 64m
     pids_limit: 32
-    # No fixed REDIS_ADDR on purpose: monitors immich-redis and
-    # paperless-redis (2 instances on this host) via redis_exporter's
-    # multi-target pattern (/scrape?target=...), same as blackbox-exporter
-    # (metrics_path /probe + relabel_configs) in prometheus.yml.
-    # Published on urahara's LAN IP: VictoriaMetrics (zangetsu) needs IP:port.
+    # No fixed REDIS_ADDR: multi-target via /scrape?target=... monitors both
+    # immich-redis and paperless-redis, same pattern as blackbox-exporter.
+    # Cross-host (CONVENTIONS.md): VictoriaMetrics on zangetsu needs IP:port.
     ports:
       - "192.168.15.215:9121:9121"
     env_file:

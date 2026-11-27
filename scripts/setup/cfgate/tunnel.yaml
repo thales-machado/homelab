@@ -15,10 +15,9 @@ spec:
       name: cloudflare-api-token
   cloudflared:
     replicas: 2
-    # Keeping the CRD's digest-pinned default image, which is a cloudflared
-    # fork from ghcr.io/inherent-design. The fork is only required for h2c,
-    # which nginx does not use, so the official image is an option once the
-    # tunnel is proven; it is not a variable worth adding during validation.
+    # Keeping the CRD's digest-pinned cloudflared fork (ghcr.io/inherent-design) -
+    # only needed for h2c, which nginx doesn't use. Official image is an
+    # option later, not a variable worth adding during validation.
     resources:
       requests:
         cpu: 10m

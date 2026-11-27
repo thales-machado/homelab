@@ -1,10 +1,8 @@
 services:
   calnode:
-    # Calendly-style booking page: a single Go binary with an embedded SQLite
-    # database, so no Postgres and no Redis. On urahara for the memory, and its
-    # database is picked up by backup-sqlite-urahara.sh.
-    # Public on purpose and without an access group - see the exception list in
-    # CONVENTIONS.md: the point of the link is that a stranger can open it.
+    # Single Go binary, embedded SQLite - no Postgres/Redis. DB picked up by
+    # backup-sqlite-urahara.sh. Public, no access group on purpose
+    # (CONVENTIONS.md exception list): a stranger must be able to open it.
     image: ghcr.io/calnode/calnode:latest
     container_name: calnode
     restart: unless-stopped

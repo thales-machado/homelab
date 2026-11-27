@@ -6,10 +6,9 @@ services:
     cpus: 2.00
     mem_limit: 4096m
     pids_limit: 256
-    # WEBUI_PORT 8095: the default 8080 is already taken by stirling-pdf on
-    # urahara. TORRENTING_PORT 6881 is the default, forwarded on the router
-    # (outside this repo). Published on the LAN so zangetsu's Traefik can
-    # reach it through cross-host.yml, like every private urahara service.
+    # WEBUI_PORT 8095: default 8080 is taken by stirling-pdf on urahara.
+    # 6881 forwarded on the router (outside this repo). Cross-host
+    # (CONVENTIONS.md): zangetsu's Traefik reaches it via cross-host.yml.
     ports:
       - "192.168.15.215:8095:8095"
       - "6881:6881"

@@ -33,10 +33,9 @@ services:
     networks:
       - cloudflare-net
     labels:
-      # Pinned: v3.5 and older ship a Docker client fixed at API 1.24, which
-      # breaks against Docker 29+. No Watchtower label, bumped by hand.
-      # This is the only router with tls.domains: it issues the single
-      # wildcard that every other router then reuses by SNI.
+      # Pinned: v3.5- ship a Docker client stuck at API 1.24, breaks on
+      # Docker 29+. Bumped by hand. Only router with tls.domains - issues
+      # the wildcard every other router reuses by SNI.
       traefik.enable: "true"
       traefik.http.routers.traefik-dashboard.rule: "Host(`traefik.lan.thalespm.me`)"
       traefik.http.routers.traefik-dashboard.entrypoints: "websecure"

@@ -28,12 +28,9 @@ providers:
     watch: true
 
 certificatesResolvers:
-  # DNS-01 via Cloudflare: no ports 80/443 exposed to the internet, no
-  # permanent public record (the challenge only creates/deletes a temporary
-  # _acme-challenge TXT). "domains" (wildcard *.lan.thalespm.me) lives on the
-  # individual router (tls.domains), not here in the static resolver:
-  # "domains" is not a valid field in certificatesResolvers.<name>.acme
-  # (confirmed: Traefik refuses to start with "field not found, node: domains").
+  # DNS-01 via Cloudflare: no ports 80/443 exposed, only a temporary
+  # _acme-challenge TXT. Wildcard "domains" goes on the router's tls.domains,
+  # not here - Traefik refuses to start with it under acme (confirmed).
   cloudflare:
     acme:
       email: admin@thalespm.me

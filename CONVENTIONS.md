@@ -111,6 +111,7 @@ Each fragment `docker/services/<category>/<service>/<service>.yaml` is self-cont
   - `nas-drive`: owner only, not synced (Restic repositories and downloads).
   - a third share used by other people in the house, with fine-grained per-subfolder ACLs. **Before changing any permission on it, read the QNAP runbook in the private repo**: editing the share-level permission screen resets the fine ACL of the share root.
 - **NAS media (synced share)**: `<share>/media/<app>/<purpose>` (e.g. `media/immich/upload`, `media/paperless/consume`), mounted at `/mnt/media/<app>/` with **one fixed CIFS `.mount` per app**. The share is synced off-site by the NAS, so it is out of Restic's scope.
+- **Bind the whole `media/<app>/` dir, not a subdir of it.** Binding only a subdirectory (e.g. just `.../consume`) lets Docker silently create an anonymous volume shadowing the rest on the next recreate, and files already there appear to vanish.
 - **Remote storage via rclone**: `/mnt/remote/<name>`, data that already has its own backup at the source. It does not follow `media/<app>/` and is out of Restic's scope.
 - **Transient downloads (qBittorrent)**: `nas-drive/downloads/`, outside `media/<app>/` (mixed content, not one app's library) and outside `lemon-drive` (in-progress or uncurated downloads should not sync to the cloud). Out of Restic's scope. Fixed mount `mnt-downloads-qbittorrent\x2dgeral.mount` → `/mnt/downloads/qbittorrent-geral` (category "geral"); the "games" category is local, on `games-4tb`. `downloads/software/iso/` (reinstallable installers) follows the same rule.
 - **Local game disk (urahara)**: `/mnt/games-4tb` (local ext4 by UUID, `scripts/systemd/mnt-games-4tb.mount`, `WantedBy=local-fs.target`, not part of `setup-nas-mounts.sh`), layout `retro/roms/<system>/` and `retro/bios/<system>/` with ES-DE system names. Wolf saves and states live in `/opt/apps/wolf` (Restic), not on this disk.
@@ -333,6 +334,8 @@ records. The rule here lifts only when an official image carrying it is
 actually running: merged is not released, and released still needs the chart
 version in `k8s/argocd/applications/cfgate.yaml` to move off 1.10.0. Until
 then the dashboard stays read-only for these records.
+
+**Monitor cfgate via `kube-state-metrics`' `customResourceState` (object state), not cfgate's own gauge.** The gauge is just a last-reconcile timestamp and stayed "healthy" through the 10h outage above; the real error counter sits behind leader election, so a scrape misses it about half the time.
 
 **Moving a Docker service to the cluster, in order.** Done three times on
 2026-11-23/24 (the site, openspeedtest, it-tools) and the steps are stable.
@@ -620,6 +623,8 @@ A backup script for a new app goes in `backup/`, not a new folder. Create a subf
 Full skeletons (private/public/both/webhook) live in `.claude/commands/new-service.md`, the `/new-service` command.
 
 Common base: resource limits, `TZ=${TZ}`, `env_file: ${HOMELAB_ENV}` if it uses secrets, bind mount under `/opt/apps/<name>/`, only a reference to `cloudflare-net`. Fragment path: `docker/services/<category>/<name>/<name>.yaml`; exporters go in `docker/services/observability/metrics/exporters/<name>/` and get a scrape job, with no Traefik, DNS, DockFlare or Homepage entry.
+
+A one-shot init step uses `profiles: init` (run once by hand), not `depends_on: service_completed_successfully`: the latter forces every stack start to wait on it and leaves it `Exited(0)` forever, cluttering Komodo with no native way to hide it (used by `dockflare.yaml`/`dockflare-agent.yaml`).
 
 Private service on zangetsu:
 

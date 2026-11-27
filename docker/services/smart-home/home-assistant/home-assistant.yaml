@@ -3,11 +3,9 @@ services:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: home-assistant
     restart: unless-stopped
-    # Documented network exception (like keepalived/tailscale): local device
-    # discovery (mDNS/SSDP, used by HomeKit/Chromecast/etc. integrations)
-    # needs direct multicast/broadcast access on the physical interface,
-    # which the cloudflare-net bridge does not expose. See CONVENTIONS.md
-    # "Network exceptions".
+    # Network exception (CONVENTIONS.md): mDNS/SSDP device discovery
+    # (HomeKit/Chromecast) needs multicast on the physical interface, which
+    # the cloudflare-net bridge doesn't expose.
     network_mode: host
     cpus: 1.00
     mem_limit: 512m

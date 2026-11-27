@@ -10,12 +10,9 @@ services:
       - ${HOMELAB_ENV}
     environment:
       - TZ=${TZ}
-    # No DATA_SOURCE_NAME: multi-target mode via /probe (see
-    # docker/services/observability/metrics/victoriametrics/prometheus.yml, job
-    # "postgres-exporter"). The old format (comma-separated DSNs) does not
-    # work for multiple databases: the default collectors (pg_stat_database
-    # etc.) only reflected the FIRST DSN, with no "server" label to tell
-    # them apart; only pg_up/version were per-instance. Confirmed on /metrics.
+    # No DATA_SOURCE_NAME: multi-target mode via /probe instead (prometheus.yml
+    # job "postgres-exporter") - comma-separated DSNs only exposed the first
+    # database's collectors, with no "server" label to tell them apart.
     command:
       - --config.file=/etc/postgres_exporter.yml
     volumes:

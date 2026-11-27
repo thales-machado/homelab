@@ -15,12 +15,9 @@ scrape_configs:
         labels:
           host: urahara
 
-  # Multi-target through /probe (auth_modules in postgres_exporter.yml,
-  # rendered by scripts/setup/setup-postgres-exporter-config.sh).
-  # DATA_SOURCE_NAME with comma-separated DSNs does not work for several
-  # databases: the default collectors only reported the FIRST DSN, with no
-  # "server" label. Same multi-target pattern as redis-exporter-urahara and
-  # blackbox-exporter below.
+  # Multi-target through /probe (auth_modules in postgres_exporter.yml, from
+  # scripts/setup/setup-postgres-exporter-config.sh) - comma-separated DSNs
+  # only exposed the first database's collectors, no "server" label.
   - job_name: "postgres-exporter"
     metrics_path: /probe
     static_configs:
@@ -157,10 +154,9 @@ scrape_configs:
         labels:
           host: urahara
 
-  # Container CPU, memory, network and disk inside seireitei, read straight from
-  # the node. insecure_skip_verify because kubeadm gives the kubelet a
-  # self-signed serving certificate unless serverTLSBootstrap is on.
-  # Token installed by scripts/setup/setup-victoriametrics-k8s-token.sh.
+  # Container stats inside seireitei. insecure_skip_verify: kubeadm's kubelet
+  # cert is self-signed unless serverTLSBootstrap is on. Token installed by
+  # scripts/setup/setup-victoriametrics-k8s-token.sh.
   - job_name: "kubelet-seireitei"
     scheme: https
     tls_config:

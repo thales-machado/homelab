@@ -34,11 +34,9 @@ data:
         reload
         loadbalance
     }
-    # PM-0011: forward balances across every resolver in resolv.conf instead of
-    # falling back like the C library, so with a split horizon half the lookups
-    # for a homelab hostname come back NXDOMAIN. Both targets serve the same
-    # records (Nebula Sync), so balancing between these two is safe: the VIP
-    # first, urahara direct to cover the VIP's failover window.
+    # PM-0011: forward balances across resolvers instead of falling back,
+    # so split horizon returned NXDOMAIN half the time. Safe here: VIP +
+    # urahara direct serve identical records (Nebula Sync).
     thalespm.me:53 {
         errors
         cache 30

@@ -30,10 +30,8 @@ ls -1t "${DIR}"/database-*.sqlite3 2>/dev/null | tail -n +$((KEEP + 1)) | xargs 
 
 echo "$(date -Is) backup OK: ${out} ($(du -h "$out" | cut -f1))"
 
-# The official n8n image does not expose `sh` in its entrypoint (it only
-# accepts `n8n` subcommands as direct argv), so the next DAG step
-# (export-n8n-workflows) cannot run its own `mkdir -p`/`chown`. The directory
-# must already exist and be owned by uid 1000 (the image's "node" user)
-# before that step runs.
+# n8n's image has no `sh` in its entrypoint, so the next DAG step
+# (export-n8n-workflows) can't mkdir/chown itself - create it here,
+# owned by uid 1000 (the image's "node" user).
 mkdir -p "${DIR}/workflows-json"
 chown -R 1000:1000 "${DIR}/workflows-json"

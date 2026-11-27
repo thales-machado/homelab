@@ -20,10 +20,9 @@ RA_IMAGE="ghcr.io/games-on-whales/retroarch@sha256:bbcf4523e589fc7177b522ce56ba9
 CORES_URL="https://buildbot.libretro.com/stable/1.22.2/linux/x86_64/RetroArch_cores.7z"
 CORES_SHA256="4b7ed8dc97d4bf035fce182c64b5658c7662e2e9e5d42129538afbd4b6096307"
 INFO_TAG="v1.22.2"
-# MAME comes from the buildbot "nightly" channel (the stable pack is stuck on an
-# old MAME). Nightly only serves "latest", so the binary is cached under this
-# date and pinned by sha256. To bump: delete the cache, rerun, test a session,
-# update the sha256/date.
+# MAME: stable pack is stuck old, so this uses buildbot "nightly", which only
+# serves "latest" - cached by date, pinned by sha256. To bump: delete cache,
+# rerun, test, update sha256/date.
 MAME_NIGHTLY_URL="https://buildbot.libretro.com/nightly/linux/x86_64/latest/mame_libretro.so.zip"
 MAME_NIGHTLY_SHA256="4f4ccc4b6e6d3ed5129246cd0e0c7d84b73a9d01c45d648ae496bb81f3fa7c06"
 MAME_NIGHTLY_CACHE_NAME="mame_libretro-nightly-2026-10-04.so.zip"  # MAME 0.289 (9069f393)
@@ -121,10 +120,9 @@ PATTERNS=()
 for core in "${CORES[@]}"; do
   PATTERNS+=("${core}_libretro.so")
 done
-# 7z from the RetroArch image itself (p7zip-full): no new host dependency.
-# -r matches the name at any depth (a "*/cores/" pattern did not match).
-# -mmt=1: multithreaded, p7zip intermittently reported "CRC Failed" on random
-# files in the solid block (package sha256 ok); single-threaded it does not.
+# 7z from the RetroArch image (p7zip-full): no new host dependency. -r
+# matches at any depth ("*/cores/" didn't). -mmt=1: multithreaded p7zip
+# intermittently CRC-fails on random files in the solid block.
 sudo docker run --rm --entrypoint 7z \
   -v "$CACHE:/in:ro" -v "$PROFILE/cores:/out" "$RA_IMAGE" \
   e -y -r -mmt=1 -o/out /in/RetroArch_cores.7z "${PATTERNS[@]}" >/dev/null

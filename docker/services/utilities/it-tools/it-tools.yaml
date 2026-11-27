@@ -6,10 +6,9 @@ services:
     cpus: 0.30
     mem_limit: 128m
     pids_limit: 64
-    # Published on urahara's LAN IP: Traefik (zangetsu) reaches this private
-    # service on another host by IP:port via its file provider. A container
-    # name like "it-tools:80" only resolves on the same host (real bug in the
-    # old Caddy setup: it always returned 502).
+    # Cross-host (CONVENTIONS.md): Traefik on zangetsu reaches it by IP:port -
+    # a container name like "it-tools:80" only resolves same-host (the old
+    # Caddy setup always 502'd on this).
     ports:
       - "192.168.15.215:8092:80"
     env_file:

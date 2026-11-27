@@ -501,12 +501,9 @@ groups:
               datasourceUid: efswmxbcxua68c
               model:
                 queryType: instant
-                # Absence of success, not presence of failure. The container
-                # stays Up when the sync aborts, so only the log shows it, but
-                # a single "Sync failed" is usually a Pi-hole still booting and
-                # the next run fixes it. 13h covers two of the 6h cron cycles,
-                # and a missing "Sync completed" also catches the container
-                # never running at all, which counting failures never would.
+                # Absence of success, not presence of failure: a lone "Sync
+                # failed" is usually Pi-hole still booting. 13h covers two
+                # cron cycles and also catches the container never running.
                 expr: 'sum(count_over_time({container="nebula-sync"} |= "Sync completed" [13h]))'
                 intervalMs: 1000
                 maxDataPoints: 43200
@@ -619,13 +616,9 @@ groups:
                 to: 0
               datasourceUid: ffssrfrz5yxogd
               model:
-                # Time since the last sample per AP (keeps the "name" label).
-                # Never drops out of the query the way count(uptime_seconds)
-                # did; that old approach got stuck before "resolved", because
-                # a vanished series has no new value to re-evaluate.
-                # last_over_time+timestamp() gives a continuous per-device
-                # staleness signal: rises when the AP stops reporting, back
-                # to ~0 when it reconnects.
+                # Staleness signal per AP via last_over_time+timestamp(), not
+                # count(uptime_seconds): a vanished series there got stuck
+                # before "resolved" since it had no new value to re-evaluate.
                 expr: time() - timestamp(last_over_time(unpoller_device_uptime_seconds{type="uap"}[24h]))
                 instant: true
                 intervalMs: 1000
@@ -845,11 +838,9 @@ groups:
             host: urahara
           isPaused: false
 
-# Orphan rules removed via file (deleteRules). Grafana does not delete a
-# file-provisioned rule just because it disappeared from groups: above
-# (known, documented bug; X-Disable-Provenance does not work for deleting via
-# the API, confirmed in production when removing caddy-backend-down after the
-# move to Traefik). They must be declared here.
+# Orphan rules removed via file (deleteRules): Grafana won't delete a
+# file-provisioned rule just because it left groups: above (known bug,
+# X-Disable-Provenance doesn't help) - must be declared here explicitly.
 deleteRules:
     # The 15 lab rules, removed with the lab cluster on 2026-11-19. Grafana does
     # not delete a file-provisioned rule just because it left groups: above.

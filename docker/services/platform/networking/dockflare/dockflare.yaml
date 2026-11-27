@@ -42,9 +42,8 @@ services:
     networks:
       - cloudflare-net
     restart: "no"
-    # Does NOT run on a plain `docker compose up -d`. Chowns /opt/apps/dockflare
-    # to UID 65532 and must be run by hand before the first start on a new host
-    # or after resetting the volume - command and trade-off in
+    # Does NOT run on a plain `docker compose up -d` - chowns
+    # /opt/apps/dockflare to UID 65532, run by hand first. Details in
     # docs/traefik-dockflare.md.
     profiles:
       - init
@@ -87,11 +86,9 @@ services:
       - AGENT_STATUS_UPDATE_INTERVAL_SECONDS=10
       - SCAN_ALL_NETWORKS=false
       - CLOUDFLARED_NETWORK_NAME=cloudflare-net
-      # External mode: DockFlare only reads labels for ingress and DNS and
-      # never touches the cloudflared container. In managed mode it recreates
-      # that container outside compose, which is the root cause of the
-      # recurring "container name already in use" - docs/traefik-dockflare.md.
-      # EXTERNAL_TUNNEL_ID is the UUID inside CF_TUNNEL_TOKEN itself.
+      # External mode: DockFlare only reads labels, never touches the
+      # cloudflared container - managed mode recreating it outside compose
+      # caused "container name already in use" (docs/traefik-dockflare.md).
       - USE_EXTERNAL_CLOUDFLARED=true
       - EXTERNAL_TUNNEL_ID=${CF_TUNNEL_ID}
       - MAX_CONCURRENT_DNS_OPS=3

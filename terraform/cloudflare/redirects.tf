@@ -3,10 +3,9 @@
 # writes only hostnames neither of them knows about, so the rule that matters
 # holds: one writer per hostname.
 
-# A redirect only applies to a hostname Cloudflare proxies, and this one has no
-# origin, so the address is the documented placeholder: the edge answers the
-# request and never connects to it. If the rule below stops matching, visitors
-# get an origin error here rather than the wrong content.
+# No origin behind this proxied hostname - 192.0.2.1 is a documented
+# placeholder the edge answers without connecting to. If the rule below
+# stops matching, visitors get an origin error, not the wrong content.
 resource "cloudflare_dns_record" "www" {
   zone_id = data.cloudflare_zone.thalesmachado_net.id
   name    = "www.thalesmachado.net"

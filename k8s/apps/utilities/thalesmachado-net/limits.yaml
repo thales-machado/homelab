@@ -18,10 +18,8 @@ metadata:
   name: budget
   namespace: thalesmachado-net
 spec:
-  # Sized for two pods, not one: a rolling update runs the new pod alongside
-  # the old one, so a quota that only fits the steady state blocks the very
-  # rollout it is meant to bound, and the Deployment stalls with both
-  # ReplicaSets at one replica.
+  # Sized for two pods: a rolling update runs new+old side by side, so a
+  # steady-state-only quota stalls the very rollout it's meant to bound.
   hard:
     requests.cpu: 200m
     requests.memory: 256Mi
